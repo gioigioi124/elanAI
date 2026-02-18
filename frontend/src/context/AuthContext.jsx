@@ -37,6 +37,29 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const register = async (username, password, name, phone) => {
+    try {
+      const response = await api.post("/api/auth/register", {
+        username,
+        password,
+        name,
+        phone,
+      });
+      if (response.data) {
+        localStorage.setItem("user", JSON.stringify(response.data));
+        setUser(response.data);
+        toast.success("Đăng ký thành công!");
+        return true;
+      }
+    } catch (error) {
+      console.error("Register error:", error);
+      const message =
+        error.response?.data?.message || "Đăng ký thất bại. Vui lòng thử lại.";
+      toast.error(message);
+      return false;
+    }
+  };
+
   const logout = () => {
     localStorage.removeItem("user");
     setUser(null);
@@ -44,7 +67,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, loading }}>
+    <AuthContext.Provider value={{ user, login, register, logout, loading }}>
       {!loading && children}
     </AuthContext.Provider>
   );

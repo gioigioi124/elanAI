@@ -63,4 +63,42 @@ const getMe = async (req, res) => {
   }
 };
 
-export { loginUser, getMe };
+// @desc    Register a new user
+// @route   POST /api/auth/register
+// @access  Public
+const registerUser = async (req, res) => {
+  const { username, password, name, phone } = req.body;
+
+  try {
+    const userExists = await User.findOne({ username });
+
+    if (userExists) {
+      return res.status(400).json({ message: "Tên đăng nhập đã tồn tại" });
+    }
+
+    const user = await User.create({
+      username,
+      password,
+      name,
+      phone,
+      role: "staff", // Default role
+    });
+
+    if (user) {
+      res.status(201).json({
+        _id: user._id,
+        username: user.username,
+        name: user.name,
+        role: user.role,
+        token: generateToken(user._id),
+      });
+    } else {
+      res.status(400).json({ message: "Dữ liệu người dùng không hợp lệ" });
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Lỗi server" });
+  }
+};
+
+export { loginUser, getMe, registerUser };

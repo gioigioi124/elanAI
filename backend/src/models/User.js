@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import bcrypt from "bcryptjs";
 
 const userSchema = new mongoose.Schema(
   {
@@ -16,6 +17,10 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: [true, "Vui lòng nhập tên hiển thị"],
     },
+    phone: {
+      type: String,
+      trim: true,
+    },
     role: {
       type: String,
       enum: ["admin", "staff", "warehouse", "leader"],
@@ -29,12 +34,23 @@ const userSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
-// Match user entered password to hashed password in database
+// Hash password trước khi lưu vào DB
+userSchema.pre("save", async function (next) {
+  // Chỉ hash nếu password bị thay đổi (hoặc là mới)
+  if (!this.isModified("password")) {
+    return next();
+  }
+  const salt = await bcrypt.genSalt(10);
+  this.password = await bcrypt.hash(this.password, salt);
+  next();
+});
+
+// So sánh password nhập vào với hash trong DB
 userSchema.methods.matchPassword = async function (enteredPassword) {
-  return enteredPassword === this.password;
+  return bcrypt.compare(enteredPassword, this.password);
 };
 
 const User = mongoose.model("User", userSchema);

@@ -1,7 +1,16 @@
 import React, { useState, useEffect } from "react";
-import { Send, Bot, RotateCcw, Download, Sparkles } from "lucide-react";
+import {
+  Send,
+  RotateCcw,
+  Download,
+  Sparkles,
+  LogOut,
+  User,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useChatLogic } from "@/hooks/useChatLogic";
+import { useAuth } from "@/context/AuthContext";
+import { useNavigate } from "react-router";
 import { motion } from "framer-motion";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -21,7 +30,14 @@ const ChatPage = () => {
     handleNewChat,
   } = useChatLogic();
 
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const [isMobile, setIsMobile] = useState(false);
+
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
+  };
 
   // Detect mobile device
   useEffect(() => {
@@ -99,22 +115,58 @@ const ChatPage = () => {
 
   return (
     <div className="min-h-screen w-full bg-linear-to-br from-primary/5 via-white to-primary/10 flex flex-col">
-      {/* Header */}
-      <header className="shrink-0 bg-white/80 backdrop-blur-xl border-b border-gray-200 shadow-sm">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center shadow-lg">
-              <Sparkles size={20} className="text-white" />
+      {/* Header - sticky */}
+      <header className="sticky top-0 z-50 shrink-0 bg-white/90 backdrop-blur-xl border-b border-gray-200 shadow-sm">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-3">
+          {/* Logo */}
+          <div className="flex items-center gap-2 shrink-0">
+            <div className="w-9 h-9 rounded-xl bg-gradient-primary flex items-center justify-center shadow-lg">
+              <Sparkles size={18} className="text-white" />
             </div>
-            <div>
-              <h1 className="font-bold text-lg text-gray-800">ElanX AI</h1>
+            <div className="hidden sm:block">
+              <h1 className="font-bold text-base text-gray-800">ElanX AI</h1>
               <p className="text-xs text-gray-500">Trợ lý thông minh</p>
             </div>
           </div>
-          <Button variant="gradient" onClick={handleNewChat} className="gap-2">
-            <RotateCcw size={16} />
-            <span className="hidden sm:inline">Cuộc trò chuyện mới</span>
-          </Button>
+
+          {/* Right side actions */}
+          <div className="flex items-center gap-2">
+            {/* New chat button */}
+            <Button
+              variant="gradient"
+              onClick={handleNewChat}
+              className="gap-2 h-9 px-3 sm:px-4"
+            >
+              <RotateCcw size={15} />
+              <span className="hidden sm:inline text-sm">
+                Cuộc trò chuyện mới
+              </span>
+            </Button>
+
+            {/* Account info */}
+            {user && (
+              <div className="flex items-center gap-2 pl-2 border-l border-gray-200">
+                <div className="hidden sm:flex items-center gap-1.5 text-sm text-gray-700 font-medium">
+                  <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center">
+                    <User size={14} className="text-primary" />
+                  </div>
+                  <span className="max-w-[120px] truncate">
+                    {user.username || user.name || "Tài khoản"}
+                  </span>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleLogout}
+                  className="gap-1.5 h-9 px-3 text-red-500 border-red-200 hover:bg-red-50 hover:text-red-600 hover:border-red-300"
+                  title="Đăng xuất"
+                >
+                  <LogOut size={15} />
+                  <span className="hidden sm:inline text-sm">Đăng xuất</span>
+                </Button>
+              </div>
+            )}
+          </div>
         </div>
       </header>
 

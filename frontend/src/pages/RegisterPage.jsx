@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate, Link } from "react-router";
+import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -13,17 +14,24 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
-const LoginPage = () => {
+const RegisterPage = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const { login } = useAuth();
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const { register } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (password !== confirmPassword) {
+      toast.error("Mật khẩu xác nhận không khớp");
+      return;
+    }
     setLoading(true);
-    const success = await login(username, password);
+    const success = await register(username, password, name, phone);
     setLoading(false);
     if (success) {
       navigate("/");
@@ -36,19 +44,20 @@ const LoginPage = () => {
         {/* Header */}
         <CardHeader className="text-center pb-2">
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-white text-2xl">
-            🔐
+            📝
           </div>
           <CardTitle className="text-2xl font-bold text-slate-900">
-            Đăng nhập
+            Đăng ký tài khoản
           </CardTitle>
           <CardDescription className="mt-1 text-slate-500">
-            Chào mừng quay trở lại! Vui lòng nhập thông tin.
+            Điền thông tin bên dưới để tạo tài khoản mới.
           </CardDescription>
         </CardHeader>
 
         {/* Form */}
         <CardContent className="pt-6">
           <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+            {/* Tên đăng nhập */}
             <div className="flex flex-col gap-1.5">
               <Label
                 htmlFor="username"
@@ -67,6 +76,7 @@ const LoginPage = () => {
               />
             </div>
 
+            {/* Mật khẩu */}
             <div className="flex flex-col gap-1.5">
               <Label
                 htmlFor="password"
@@ -85,12 +95,68 @@ const LoginPage = () => {
               />
             </div>
 
+            {/* Xác nhận mật khẩu */}
+            <div className="flex flex-col gap-1.5">
+              <Label
+                htmlFor="confirmPassword"
+                className="text-sm font-medium text-slate-700"
+              >
+                Xác nhận mật khẩu
+              </Label>
+              <Input
+                id="confirmPassword"
+                type="password"
+                placeholder="Nhập lại mật khẩu"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                className="h-10"
+              />
+            </div>
+
+            {/* Tên hiển thị */}
+            <div className="flex flex-col gap-1.5">
+              <Label
+                htmlFor="name"
+                className="text-sm font-medium text-slate-700"
+              >
+                Tên hiển thị
+              </Label>
+              <Input
+                id="name"
+                type="text"
+                placeholder="Nhập tên hiển thị"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                className="h-10"
+              />
+            </div>
+
+            {/* Số điện thoại */}
+            <div className="flex flex-col gap-1.5">
+              <Label
+                htmlFor="phone"
+                className="text-sm font-medium text-slate-700"
+              >
+                Số điện thoại
+              </Label>
+              <Input
+                id="phone"
+                type="tel"
+                placeholder="Nhập số điện thoại"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                className="h-10"
+              />
+            </div>
+
             <Button
               type="submit"
               className="h-10 w-full font-semibold mt-1"
               disabled={loading}
             >
-              {loading ? "Đang xử lý..." : "Đăng nhập"}
+              {loading ? "Đang xử lý..." : "Đăng ký"}
             </Button>
           </form>
         </CardContent>
@@ -98,12 +164,12 @@ const LoginPage = () => {
         {/* Footer */}
         <CardFooter className="justify-center pb-6 pt-2">
           <p className="text-sm text-slate-500">
-            Chưa có tài khoản?{" "}
+            Đã có tài khoản?{" "}
             <Link
-              to="/register"
+              to="/login"
               className="font-semibold text-primary hover:underline underline-offset-4"
             >
-              Đăng ký ngay
+              Đăng nhập ngay
             </Link>
           </p>
         </CardFooter>
@@ -112,4 +178,4 @@ const LoginPage = () => {
   );
 };
 
-export default LoginPage;
+export default RegisterPage;
