@@ -62,6 +62,7 @@ export const AuthProvider = ({ children }) => {
 
   const logout = () => {
     localStorage.removeItem("user");
+    localStorage.removeItem("chatMessages"); // legacy cleanup
     setUser(null);
     toast.success("Đã đăng xuất");
   };

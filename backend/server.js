@@ -10,6 +10,7 @@ import userRouter from "./src/routers/userRouter.js";
 import customerRouter from "./src/routers/customerRouter.js";
 import shortageRouter from "./src/routers/shortageRouter.js";
 import chatbotRouter from "./src/routers/chatbotRouter.js";
+import conversationRouter from "./src/routers/conversationRouter.js";
 import cors from "cors";
 
 //gọi dotenv
@@ -56,6 +57,7 @@ app.use("/api/users", userRouter);
 app.use("/api/customers", customerRouter);
 app.use("/api/shortages", shortageRouter);
 app.use("/api/chatbot", chatbotRouter);
+app.use("/api/conversations", conversationRouter);
 
 // connect DB
 connectDB().then(() => {
