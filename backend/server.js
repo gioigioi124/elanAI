@@ -25,8 +25,19 @@ const server = http.createServer(app);
 app.use(express.json());
 
 // CORS configuration for production
+const allowedOrigins = process.env.FRONTEND_URL
+  ? process.env.FRONTEND_URL.split(",").map((o) => o.trim())
+  : ["http://localhost:5173", "http://localhost:3000"];
+
 const corsOptions = {
-  origin: process.env.FRONTEND_URL || "*",
+  origin: (origin, callback) => {
+    // Allow requests with no origin (e.g. mobile apps, curl, Postman)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error(`CORS: origin '${origin}' not allowed`));
+  },
   credentials: true,
   optionsSuccessStatus: 200,
 };
@@ -35,7 +46,7 @@ app.use(cors(corsOptions));
 // Socket.IO setup
 const io = new Server(server, {
   cors: {
-    origin: process.env.FRONTEND_URL || "*",
+    origin: allowedOrigins,
     credentials: true,
   },
 });
