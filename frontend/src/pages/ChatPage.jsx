@@ -147,7 +147,7 @@ const ChatPage = () => {
     messages.length === 1 && messages[0].role === "assistant";
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-gray-50">
+    <div className="flex h-screen w-full overflow-hidden bg-transparent">
       <AnnoyingFly />
       {/* Sidebar */}
       <ChatSidebar
@@ -164,7 +164,7 @@ const ChatPage = () => {
       <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
         {/* Top bar */}
         <header
-          className="shrink-0 bg-white/90 backdrop-blur-xl border-b border-gray-200 shadow-sm flex items-center gap-3 px-4 py-3"
+          className="shrink-0 bg-white/50 backdrop-blur-xl border-b border-white/40 shadow-sm flex items-center gap-3 px-4 py-3"
           style={{ minHeight: "57px" }}
         >
           <div className="flex-1 min-w-0">
@@ -242,10 +242,10 @@ const ChatPage = () => {
                       <div
                         className={`max-w-[85%] sm:max-w-[75%] rounded-2xl text-sm relative ${
                           msg.role === "user"
-                            ? "bg-gradient-to-br from-violet-500 to-violet-700 text-white rounded-tr-none p-4 shadow-lg"
+                            ? "bg-gradient-to-br from-violet-500/90 to-violet-700/90 backdrop-blur-md text-white rounded-tr-none p-4 shadow-lg"
                             : hasTable(msg.content)
-                              ? "bg-white text-gray-800 shadow-md border border-gray-200 rounded-tl-none p-4 pt-12"
-                              : "bg-white text-gray-800 shadow-md border border-gray-200 rounded-tl-none p-4"
+                              ? "bg-white/70 backdrop-blur-md text-gray-800 shadow-md border border-white/50 rounded-tl-none p-4 pt-12"
+                              : "bg-white/70 backdrop-blur-md text-gray-800 shadow-md border border-white/50 rounded-tl-none p-4"
                         }`}
                       >
                         {msg.role === "assistant" && hasTable(msg.content) && (
@@ -324,7 +324,7 @@ const ChatPage = () => {
                   ))}
                   {isLoading && (
                     <div className="flex justify-start">
-                      <div className="bg-white text-gray-800 shadow-md border border-gray-200 rounded-2xl rounded-tl-none p-4 text-sm flex gap-1.5">
+                      <div className="bg-white/70 backdrop-blur-md text-gray-800 shadow-md border border-white/50 rounded-2xl rounded-tl-none p-4 text-sm flex gap-1.5">
                         <span className="w-2 h-2 bg-violet-400 rounded-full animate-bounce" />
                         <span className="w-2 h-2 bg-violet-400 rounded-full animate-bounce [animation-delay:0.2s]" />
                         <span className="w-2 h-2 bg-violet-400 rounded-full animate-bounce [animation-delay:0.4s]" />
@@ -338,7 +338,7 @@ const ChatPage = () => {
           </div>
 
           {/* Input Area */}
-          <div className="shrink-0 bg-white/80 backdrop-blur-xl border-t border-gray-200 px-4 sm:px-6 py-4">
+          <div className="shrink-0 bg-white/50 backdrop-blur-xl border-t border-white/40 px-4 sm:px-6 py-4">
             <form
               onSubmit={handleSend}
               className="max-w-3xl mx-auto flex gap-3"
@@ -352,7 +352,7 @@ const ChatPage = () => {
                 autoComplete="off"
                 autoCorrect="off"
                 autoCapitalize="off"
-                className="flex-1 bg-white border-2 border-gray-200 focus:border-violet-400 rounded-2xl px-5 py-3.5 text-base focus:ring-2 focus:ring-violet-200 transition-all outline-none shadow-sm"
+                className="flex-1 bg-white/70 backdrop-blur-md border-2 border-white/60 focus:bg-white focus:border-violet-400 rounded-2xl px-5 py-3.5 text-base focus:ring-2 focus:ring-violet-200 transition-all outline-none shadow-sm"
                 style={{ fontSize: "16px" }}
               />
               <Button

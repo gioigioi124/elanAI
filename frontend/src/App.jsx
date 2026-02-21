@@ -9,7 +9,19 @@ import { AuthProvider } from "./context/AuthContext";
 
 function App() {
   return (
-    <div className="min-h-screen w-full relative">
+    <div className="min-h-screen w-full bg-white">
+      {/*  Diagonal Cross Grid Background - fixed để luôn hiện ra toàn màn hình */}
+      <div
+        className="fixed inset-0 z-0"
+        style={{
+          backgroundImage: `
+        linear-gradient(45deg, transparent 49%, #e5e7eb 49%, #e5e7eb 51%, transparent 51%),
+        linear-gradient(-45deg, transparent 49%, #e5e7eb 49%, #e5e7eb 51%, transparent 51%)
+      `,
+          backgroundSize: "40px 40px",
+        }}
+      />
+      {/* Your Content/Components */}
       <div className="relative z-10 flex flex-col min-h-screen">
         <Toaster richColors position="top-center" />
         <BrowserRouter>

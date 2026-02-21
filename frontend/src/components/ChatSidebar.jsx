@@ -91,12 +91,12 @@ const ChatSidebar = ({
         style={{ minWidth: 0 }}
       >
         <div
-          className="w-[260px] h-full flex flex-col bg-white border-r border-gray-200 shadow-sm"
+          className="w-[260px] h-full flex flex-col bg-white/60 backdrop-blur-xl border-r border-white/40 shadow-sm"
           style={{ minWidth: "260px" }}
         >
           {/* Sidebar Header - height matches chat header (py-3 + items-center) */}
           <div
-            className="flex items-center justify-between px-4 py-3 border-b border-gray-200 shadow-sm"
+            className="flex items-center justify-between px-4 py-3 border-b border-white/40 shadow-sm"
             style={{ minHeight: "57px" }}
           >
             <div className="flex items-center gap-2">
@@ -201,7 +201,7 @@ const ChatSidebar = ({
 
           {/* Account Section - height matches chat input area (py-4 + h-[54px] = ~86px) */}
           <div
-            className="border-t border-gray-200 px-3 py-4"
+            className="border-t border-white/40 px-3 py-4"
             style={{ minHeight: "86px", display: "flex", alignItems: "center" }}
           >
             <div className="relative w-full">
@@ -287,7 +287,7 @@ const ChatSidebar = ({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="flex-shrink-0 flex items-center border-r border-gray-200 bg-white/90 backdrop-blur-xl shadow-sm"
+            className="flex-shrink-0 flex items-center border-r border-white/40 bg-white/50 backdrop-blur-xl shadow-sm"
             style={{
               minHeight: "57px",
               alignSelf: "flex-start",
