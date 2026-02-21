@@ -46,8 +46,15 @@ export const uploadKnowledgeBase = async (req, res) => {
 
         const filename = file.originalname;
 
-        // 1. Clear old data from Pinecone
-        await index.deleteMany({ source: { $eq: filename } });
+        // 1. Clear old data from Pinecone (ignore 404 if index is empty/new)
+        try {
+          await index.deleteMany({ source: { $eq: filename } });
+        } catch (deleteErr) {
+          // 404 means no vectors exist yet for this source — safe to ignore
+          if (!deleteErr.message?.includes("404") && deleteErr.status !== 404) {
+            throw deleteErr;
+          }
+        }
 
         // 2. Clear meta info from MongoDB if exists
         await KnowledgeBaseFile.findOneAndDelete({ filename: filename });

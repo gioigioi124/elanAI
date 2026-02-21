@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Send, RotateCcw, Download, Menu } from "lucide-react";
+import { Send, RotateCcw, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useChatLogic } from "@/hooks/useChatLogic";
 import { useAuth } from "@/context/AuthContext";
@@ -9,6 +9,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import * as XLSX from "xlsx";
 import ChatSidebar from "@/components/ChatSidebar";
+import AnnoyingFly from "@/components/AnnoyingFly";
 import api from "@/services/api";
 
 const ChatPage = () => {
@@ -147,6 +148,7 @@ const ChatPage = () => {
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-gray-50">
+      <AnnoyingFly />
       {/* Sidebar */}
       <ChatSidebar
         conversations={conversations}
@@ -160,16 +162,11 @@ const ChatPage = () => {
 
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
-        {/* Top bar (mobile hamburger) */}
-        <header className="shrink-0 bg-white/90 backdrop-blur-xl border-b border-gray-200 shadow-sm flex items-center gap-3 px-4 py-3">
-          {!sidebarOpen && (
-            <button
-              onClick={() => setSidebarOpen(true)}
-              className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors"
-            >
-              <Menu size={18} />
-            </button>
-          )}
+        {/* Top bar */}
+        <header
+          className="shrink-0 bg-white/90 backdrop-blur-xl border-b border-gray-200 shadow-sm flex items-center gap-3 px-4 py-3"
+          style={{ minHeight: "57px" }}
+        >
           <div className="flex-1 min-w-0">
             <h1 className="text-sm font-semibold text-gray-700 truncate">
               {currentConversationId

@@ -9,6 +9,7 @@ import {
   ChevronRight,
   Sparkles,
   Settings,
+  Brain,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/context/AuthContext";
@@ -93,8 +94,11 @@ const ChatSidebar = ({
           className="w-[260px] h-full flex flex-col bg-white border-r border-gray-200 shadow-sm"
           style={{ minWidth: "260px" }}
         >
-          {/* Sidebar Header */}
-          <div className="flex items-center justify-between px-4 py-4 border-b border-gray-100">
+          {/* Sidebar Header - height matches chat header (py-3 + items-center) */}
+          <div
+            className="flex items-center justify-between px-4 py-3 border-b border-gray-200 shadow-sm"
+            style={{ minHeight: "57px" }}
+          >
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-400 to-violet-700 flex items-center justify-center shadow">
                 <Sparkles size={15} className="text-white" />
@@ -195,9 +199,12 @@ const ChatSidebar = ({
             )}
           </div>
 
-          {/* Account Section */}
-          <div className="border-t border-gray-100 p-3">
-            <div className="relative">
+          {/* Account Section - height matches chat input area (py-4 + h-[54px] = ~86px) */}
+          <div
+            className="border-t border-gray-200 px-3 py-4"
+            style={{ minHeight: "86px", display: "flex", alignItems: "center" }}
+          >
+            <div className="relative w-full">
               <button
                 onClick={() => setShowAccountMenu((v) => !v)}
                 className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl hover:bg-gray-50 transition-colors text-left"
@@ -245,6 +252,18 @@ const ChatSidebar = ({
 
                     {/* Menu items */}
                     <div className="p-1.5">
+                      {user?.role === "admin" && (
+                        <button
+                          onClick={() => {
+                            setShowAccountMenu(false);
+                            navigate("/ai-settings");
+                          }}
+                          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-indigo-600 hover:bg-indigo-50 transition-colors"
+                        >
+                          <Brain size={14} />
+                          Cấu hình AI
+                        </button>
+                      )}
                       <button
                         onClick={handleLogout}
                         className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-red-600 hover:bg-red-50 transition-colors"
@@ -264,16 +283,25 @@ const ChatSidebar = ({
       {/* Collapsed toggle button (when sidebar is closed) */}
       <AnimatePresence>
         {!isOpen && (
-          <motion.button
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={onToggle}
-            className="fixed left-3 top-3 z-50 w-9 h-9 rounded-xl bg-white border border-gray-200 shadow-md flex items-center justify-center hover:bg-gray-50 transition-colors"
-            title="Mở sidebar"
+            className="flex-shrink-0 flex items-center border-r border-gray-200 bg-white/90 backdrop-blur-xl shadow-sm"
+            style={{
+              minHeight: "57px",
+              alignSelf: "flex-start",
+              height: "57px",
+            }}
           >
-            <ChevronRight size={16} className="text-gray-600" />
-          </motion.button>
+            <motion.button
+              onClick={onToggle}
+              className="w-9 h-9 mx-1 rounded-xl bg-white border border-gray-200 shadow-md flex items-center justify-center hover:bg-gray-50 transition-colors"
+              title="Mở sidebar"
+            >
+              <ChevronRight size={16} className="text-gray-600" />
+            </motion.button>
+          </motion.div>
         )}
       </AnimatePresence>
     </>
