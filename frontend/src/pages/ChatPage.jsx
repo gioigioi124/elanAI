@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Send, RotateCcw, Download } from "lucide-react";
+import { Send, RotateCcw, Download, PanelLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useChatLogic } from "@/hooks/useChatLogic";
 import { useAuth } from "@/context/AuthContext";
@@ -147,7 +147,7 @@ const ChatPage = () => {
     messages.length === 1 && messages[0].role === "assistant";
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-gray-50">
+    <div className="flex h-screen w-full overflow-hidden bg-transparent">
       <AnnoyingFly />
       {/* Sidebar */}
       <ChatSidebar
@@ -164,32 +164,47 @@ const ChatPage = () => {
       <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
         {/* Top bar */}
         <header
-          className="shrink-0 bg-white/90 backdrop-blur-xl border-b border-gray-200 shadow-sm flex items-center gap-3 px-4 py-3"
+          className="shrink-0 bg-white/40 backdrop-blur-md border-b border-white/20 shadow-sm"
           style={{ minHeight: "57px" }}
         >
-          <div className="flex-1 min-w-0">
-            <h1 className="text-sm font-semibold text-gray-700 truncate">
-              {currentConversationId
-                ? conversations.find((c) => c._id === currentConversationId)
-                    ?.title || "Cuộc trò chuyện"
-                : "Cuộc trò chuyện mới"}
-            </h1>
+          <div className="max-w-4xl mx-auto w-full h-full flex items-center gap-3 px-4 py-3">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setSidebarOpen(true)}
+              className={`${sidebarOpen ? "hidden" : "flex"} h-9 w-9 text-gray-500 hover:bg-gray-100 rounded-xl`}
+            >
+              <PanelLeft size={20} />
+            </Button>
+
+            <div className="flex-1 min-w-0 flex items-center gap-3">
+              {!sidebarOpen && (
+                <div className="w-px h-5 bg-gray-200 hidden sm:block" />
+              )}
+              <h1 className="text-sm font-semibold text-gray-700 truncate">
+                {currentConversationId
+                  ? conversations.find((c) => c._id === currentConversationId)
+                      ?.title || "Cuộc trò chuyện"
+                  : "Cuộc trò chuyện mới"}
+              </h1>
+            </div>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleNewChat}
+              className="gap-1.5 h-8 px-3 text-xs"
+            >
+              <RotateCcw size={13} />
+              <span className="hidden sm:inline">Mới</span>
+            </Button>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleNewChat}
-            className="gap-1.5 h-8 px-3 text-xs"
-          >
-            <RotateCcw size={13} />
-            <span className="hidden sm:inline">Mới</span>
-          </Button>
         </header>
 
         {/* Messages */}
         <main className="flex-1 overflow-hidden flex flex-col">
-          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6">
-            <div className="max-w-3xl mx-auto">
+          <div className="flex-1 overflow-y-auto py-6">
+            <div className="max-w-4xl mx-auto px-4 sm:px-6">
               {loadingConversation ? (
                 <div className="flex items-center justify-center py-20">
                   <div className="flex gap-1.5">
@@ -214,7 +229,7 @@ const ChatPage = () => {
                       giá vận chuyển và nhiều thông tin khác.
                     </p>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-2xl">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-4xl">
                     {suggestions.map((suggestion, index) => (
                       <motion.button
                         key={index}
@@ -222,7 +237,7 @@ const ChatPage = () => {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: index * 0.08 }}
                         onClick={() => handleSuggestionClick(suggestion)}
-                        className="p-4 text-left rounded-2xl border-2 border-gray-200 hover:border-violet-300 hover:bg-violet-50 transition-all text-sm font-medium text-gray-700 hover:text-violet-700"
+                        className="p-4 text-left rounded-2xl border border-white/40 bg-white/30 backdrop-blur-sm hover:border-violet-300 hover:bg-white/50 transition-all text-sm font-medium text-gray-700 hover:text-violet-700 shadow-sm"
                       >
                         {suggestion}
                       </motion.button>
@@ -244,8 +259,8 @@ const ChatPage = () => {
                           msg.role === "user"
                             ? "bg-gradient-to-br from-violet-500 to-violet-700 text-white rounded-tr-none p-4 shadow-lg"
                             : hasTable(msg.content)
-                              ? "bg-white text-gray-800 shadow-md border border-gray-200 rounded-tl-none p-4 pt-12"
-                              : "bg-white text-gray-800 shadow-md border border-gray-200 rounded-tl-none p-4"
+                              ? "bg-white/60 backdrop-blur-md text-gray-800 shadow-md border border-white/40 rounded-tl-none p-4 pt-12"
+                              : "bg-white/60 backdrop-blur-md text-gray-800 shadow-md border border-white/40 rounded-tl-none p-4"
                         }`}
                       >
                         {msg.role === "assistant" && hasTable(msg.content) && (
@@ -324,7 +339,7 @@ const ChatPage = () => {
                   ))}
                   {isLoading && (
                     <div className="flex justify-start">
-                      <div className="bg-white text-gray-800 shadow-md border border-gray-200 rounded-2xl rounded-tl-none p-4 text-sm flex gap-1.5">
+                      <div className="bg-white/60 backdrop-blur-md text-gray-800 shadow-md border border-white/40 rounded-2xl rounded-tl-none p-4 text-sm flex gap-1.5">
                         <span className="w-2 h-2 bg-violet-400 rounded-full animate-bounce" />
                         <span className="w-2 h-2 bg-violet-400 rounded-full animate-bounce [animation-delay:0.2s]" />
                         <span className="w-2 h-2 bg-violet-400 rounded-full animate-bounce [animation-delay:0.4s]" />
@@ -337,11 +352,10 @@ const ChatPage = () => {
             </div>
           </div>
 
-          {/* Input Area */}
-          <div className="shrink-0 bg-white/80 backdrop-blur-xl border-t border-gray-200 px-4 sm:px-6 py-4">
+          <div className="shrink-0 bg-white/20 backdrop-blur-md border-t border-white/20 py-4">
             <form
               onSubmit={handleSend}
-              className="max-w-3xl mx-auto flex gap-3"
+              className="max-w-4xl mx-auto flex gap-3 px-4 sm:px-6"
             >
               <input
                 ref={inputRef}
@@ -352,7 +366,7 @@ const ChatPage = () => {
                 autoComplete="off"
                 autoCorrect="off"
                 autoCapitalize="off"
-                className="flex-1 bg-white border-2 border-gray-200 focus:border-violet-400 rounded-2xl px-5 py-3.5 text-base focus:ring-2 focus:ring-violet-200 transition-all outline-none shadow-sm"
+                className="flex-1 bg-white/40 backdrop-blur-sm border border-white/40 focus:border-violet-400 rounded-2xl px-5 py-3.5 text-base focus:ring-2 focus:ring-violet-200 transition-all outline-none shadow-sm"
                 style={{ fontSize: "16px" }}
               />
               <Button

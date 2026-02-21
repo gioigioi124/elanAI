@@ -4,7 +4,7 @@ import api from "@/services/api";
 const DEFAULT_WELCOME = {
   role: "assistant",
   content:
-    "Xin chào! Giá bông, công nợ, khách hàng, tính giá... tôi sẽ giúp bạn?",
+    "Xin chào! Giá bông, công nợ, khách hàng, tính giá... câu trả lời đầu tiên sẽ mất thời gian một chút?",
 };
 
 export const useChatLogic = ({

@@ -1,20 +1,22 @@
 import React from "react";
 import AiKnowledgeUpload from "../components/chat/AiKnowledgeUpload";
-import { Sparkles, Brain } from "lucide-react";
+import { Sparkles, Brain, ArrowLeft } from "lucide-react";
+import { Link } from "react-router";
 
 const AiSettingsPage = () => {
   return (
     <div className="container mx-auto p-3 md:p-6 space-y-4 md:space-y-6">
-      <div className="flex items-center gap-3 mb-2">
-        <div className="p-2 bg-indigo-100 rounded-xl text-indigo-600">
-          <Brain size={22} />
-        </div>
-        <div>
-          <h1 className="text-2xl font-bold text-gray-800">Cấu hình AI</h1>
-          <p className="text-sm text-gray-500">
-            Quản lý cơ sở kiến thức cho Chatbot
-          </p>
-        </div>
+      <div className="flex flex-col gap-4">
+        <Link
+          to="/"
+          className="inline-flex items-center gap-2 w-fit px-4 py-2 text-sm font-medium text-gray-600 hover:text-indigo-600 hover:bg-white/60 backdrop-blur-sm rounded-xl transition-all duration-200 group border border-transparent hover:border-indigo-100 shadow-sm hover:shadow-md"
+        >
+          <ArrowLeft
+            size={18}
+            className="transition-transform group-hover:-translate-x-1"
+          />
+          Quay lại Chat
+        </Link>
       </div>
 
       <div className="grid lg:grid-cols-2 gap-6">
