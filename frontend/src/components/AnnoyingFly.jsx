@@ -91,7 +91,7 @@ export default function AnnoyingFly() {
         stateRef.current = "entering";
         setVisible(true);
       },
-      2000 + Math.random() * 4000,
+      10000 + Math.random() * 10000,
     );
   }, []);
 

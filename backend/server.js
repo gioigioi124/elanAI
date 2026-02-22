@@ -3,12 +3,8 @@ import dotenv from "dotenv";
 import http from "http";
 import { Server } from "socket.io";
 import { connectDB } from "./src/config/db.js";
-import ordersRouter from "./src/routers/ordersRouter.js";
-import vehiclesRouter from "./src/routers/vehiclesRouter.js";
 import authRouter from "./src/routers/authRouter.js";
 import userRouter from "./src/routers/userRouter.js";
-import customerRouter from "./src/routers/customerRouter.js";
-import shortageRouter from "./src/routers/shortageRouter.js";
 import chatbotRouter from "./src/routers/chatbotRouter.js";
 import conversationRouter from "./src/routers/conversationRouter.js";
 import cors from "cors";
@@ -61,12 +57,8 @@ io.on("connection", (socket) => {
 });
 
 //rút gọn URL nhờ router
-app.use("/orders", ordersRouter);
-app.use("/vehicles", vehiclesRouter);
 app.use("/api/auth", authRouter);
 app.use("/api/users", userRouter);
-app.use("/api/customers", customerRouter);
-app.use("/api/shortages", shortageRouter);
 app.use("/api/chatbot", chatbotRouter);
 app.use("/api/conversations", conversationRouter);
 
