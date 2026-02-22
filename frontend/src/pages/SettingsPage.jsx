@@ -97,16 +97,16 @@ const SettingsPage = () => {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 w-full max-w-2xl mx-auto pt-24 pb-12 px-4 relative z-10">
+      <main className="flex-1 w-full max-w-lg mx-auto pt-24 pb-12 px-4 sm:px-6 relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-xl shadow-gray-200/50 border border-white p-6 md:p-10"
+          className="bg-white/90 backdrop-blur-xl rounded-[2rem] shadow-2xl shadow-gray-200/50 border border-white/60 p-6 sm:p-8 md:p-10"
         >
-          <form onSubmit={handleSubmit} className="space-y-8">
+          <form onSubmit={handleSubmit} className="flex flex-col gap-8">
             {/* Avatar Section */}
-            <div className="flex flex-col items-center gap-4">
-              <div className="relative group">
+            <div className="flex flex-col items-center gap-3">
+              <div className="relative group shrink-0">
                 <div className="w-28 h-28 rounded-full border-4 border-white shadow-xl shadow-gray-200/50 bg-violet-100 flex items-center justify-center overflow-hidden transition-all duration-300 group-hover:shadow-2xl">
                   {avatarPreview ? (
                     <img
@@ -162,8 +162,8 @@ const SettingsPage = () => {
             </div>
 
             {/* Form Fields */}
-            <div className="space-y-5">
-              <div>
+            <div className="flex flex-col gap-5">
+              <div className="w-full">
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">
                   Tên đăng nhập
                 </label>
@@ -175,7 +175,7 @@ const SettingsPage = () => {
                 </p>
               </div>
 
-              <div>
+              <div className="w-full">
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">
                   Tên hiển thị
                 </label>
@@ -195,7 +195,7 @@ const SettingsPage = () => {
                 </div>
               </div>
 
-              <div>
+              <div className="w-full">
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">
                   Số điện thoại
                 </label>
@@ -230,7 +230,7 @@ const SettingsPage = () => {
               </div>
             </div>
 
-            <div className="pt-6">
+            <div className="pt-4 pb-2">
               <button
                 type="submit"
                 disabled={loading}
