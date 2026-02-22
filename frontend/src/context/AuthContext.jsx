@@ -60,6 +60,22 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const updateProfile = async (profileData) => {
+    try {
+      const response = await api.put("/api/users/profile", profileData);
+      if (response.data) {
+        localStorage.setItem("user", JSON.stringify(response.data));
+        setUser(response.data);
+        return { success: true, data: response.data };
+      }
+    } catch (error) {
+      console.error("Update profile error:", error);
+      const message =
+        error.response?.data?.message || "Cập nhật thất bại. Vui lòng thử lại.";
+      return { success: false, message };
+    }
+  };
+
   const logout = () => {
     localStorage.removeItem("user");
     localStorage.removeItem("chatMessages"); // legacy cleanup
@@ -68,7 +84,9 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, loading }}>
+    <AuthContext.Provider
+      value={{ user, login, register, logout, updateProfile, loading }}
+    >
       {!loading && children}
     </AuthContext.Provider>
   );

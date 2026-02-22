@@ -6,6 +6,7 @@ import {
   updateUser,
   deleteUser,
   getStaffList,
+  updateUserProfile,
 } from "../controllers/userController.js";
 import { protect, authorize } from "../middleware/authMiddleware.js";
 
@@ -14,6 +15,9 @@ router.use(protect);
 
 // Route công khai cho nhân viên gán đơn/xe (chỉ lấy id/name)
 router.get("/staff-list", getStaffList);
+
+// Trang cá nhân - Người dùng tự cập nhật thông tin
+router.put("/profile", updateUserProfile);
 
 // Các routes quản lý cần quyền admin
 router.use(authorize("admin"));

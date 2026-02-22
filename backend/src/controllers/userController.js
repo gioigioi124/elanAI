@@ -106,6 +106,42 @@ const deleteUser = async (req, res) => {
   }
 };
 
+// @desc    Update user profile
+// @route   PUT /api/users/profile
+// @access  Private
+const updateUserProfile = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+
+    if (user) {
+      user.name = req.body.name || user.name;
+      user.phone = req.body.phone !== undefined ? req.body.phone : user.phone;
+      user.avatar =
+        req.body.avatar !== undefined ? req.body.avatar : user.avatar;
+
+      if (req.body.password) {
+        user.password = req.body.password;
+      }
+
+      const updatedUser = await user.save();
+
+      res.json({
+        _id: updatedUser._id,
+        username: updatedUser.username,
+        name: updatedUser.name,
+        role: updatedUser.role,
+        phone: updatedUser.phone,
+        avatar: updatedUser.avatar,
+      });
+    } else {
+      res.status(404).json({ message: "Không tìm thấy người dùng" });
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Lỗi server" });
+  }
+};
+
 // @desc    Get staff list for dropdowns (id and name only)
 // @route   GET /api/users/staff-list
 // @access  Private
@@ -121,4 +157,11 @@ const getStaffList = async (req, res) => {
   }
 };
 
-export { createUser, getUsers, updateUser, deleteUser, getStaffList };
+export {
+  createUser,
+  getUsers,
+  updateUser,
+  deleteUser,
+  getStaffList,
+  updateUserProfile,
+};

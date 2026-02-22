@@ -213,9 +213,17 @@ const ChatSidebar = ({
                     onClick={() => setShowAccountMenu((v) => !v)}
                     className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl hover:bg-white/40 transition-colors text-left"
                   >
-                    <div className="w-7 h-7 rounded-full bg-violet-100 flex items-center justify-center flex-shrink-0">
-                      <User size={13} className="text-violet-600" />
-                    </div>
+                    {user?.avatar ? (
+                      <img
+                        src={user.avatar}
+                        alt="Avatar"
+                        className="w-7 h-7 rounded-full object-cover flex-shrink-0"
+                      />
+                    ) : (
+                      <div className="w-7 h-7 rounded-full bg-violet-100 flex items-center justify-center flex-shrink-0">
+                        <User size={13} className="text-violet-600" />
+                      </div>
+                    )}
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-semibold text-gray-800 truncate">
                         {user?.name || user?.username || "Tài khoản"}
@@ -241,9 +249,17 @@ const ChatSidebar = ({
                       >
                         <div className="px-4 py-3 bg-gradient-to-r from-violet-50 to-purple-50 border-b border-gray-100">
                           <div className="flex items-center gap-2.5">
-                            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-violet-400 to-violet-700 flex items-center justify-center">
-                              <User size={16} className="text-white" />
-                            </div>
+                            {user?.avatar ? (
+                              <img
+                                src={user.avatar}
+                                alt="Avatar"
+                                className="w-9 h-9 rounded-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-violet-400 to-violet-700 flex items-center justify-center">
+                                <User size={16} className="text-white" />
+                              </div>
+                            )}
                             <div>
                               <p className="text-sm font-semibold text-gray-800">
                                 {user?.name || user?.username}
@@ -268,6 +284,16 @@ const ChatSidebar = ({
                               Cấu hình AI
                             </button>
                           )}
+                          <button
+                            onClick={() => {
+                              setShowAccountMenu(false);
+                              navigate("/settings");
+                            }}
+                            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                          >
+                            <Settings size={14} />
+                            Cài đặt tài khoản
+                          </button>
                           <button
                             onClick={handleLogout}
                             className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-red-600 hover:bg-red-50 transition-colors"

@@ -4,6 +4,7 @@ import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import ChatPage from "./pages/ChatPage";
 import AiSettingsPage from "./pages/AiSettingsPage";
+import SettingsPage from "./pages/SettingsPage";
 import PrivateRoute from "./components/PrivateRoute";
 import { AuthProvider } from "./context/AuthContext";
 
@@ -31,6 +32,7 @@ function App() {
                 <Route path="/register" element={<RegisterPage />} />
                 <Route element={<PrivateRoute />}>
                   <Route path="/" element={<ChatPage />} />
+                  <Route path="/settings" element={<SettingsPage />} />
                 </Route>
                 <Route element={<PrivateRoute allowedRoles={["admin"]} />}>
                   <Route path="/ai-settings" element={<AiSettingsPage />} />
