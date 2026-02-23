@@ -1,5 +1,15 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener("resize", handler);
+    return () => window.removeEventListener("resize", handler);
+  }, []);
+  return isMobile;
+}
+
 const QUOTES = [
   "Zzzzz... tao đang bận.",
   "Mày nhìn gì vậy?",
@@ -21,6 +31,7 @@ const QUOTES = [
 const FLY_SIZE = 48;
 
 export default function AnnoyingFly() {
+  const isMobile = useIsMobile();
   const posRef = useRef({ x: 200, y: 200 });
   const velRef = useRef({ vx: 1.5, vy: 1.5 });
   const stateRef = useRef("flying"); // 'flying' | 'leaving' | 'entering' | 'hidden'
@@ -91,7 +102,7 @@ export default function AnnoyingFly() {
         stateRef.current = "entering";
         setVisible(true);
       },
-      10000 + Math.random() * 10000,
+      20000 + Math.random() * 10000,
     );
   }, []);
 
@@ -196,7 +207,7 @@ export default function AnnoyingFly() {
     else setQuote(QUOTES[Math.floor(Math.random() * QUOTES.length)]);
   };
 
-  if (!visible) return null;
+  if (!visible || isMobile) return null;
 
   return (
     <>
