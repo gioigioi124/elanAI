@@ -61,9 +61,11 @@ export const useChatLogic = ({
     [onConversationUpdated],
   );
 
-  // Check if message contains a markdown table
+  // Check if message contains a markdown table safely
   const hasTable = (content) => {
-    return content && content.includes("|") && content.includes("---");
+    if (!content) return false;
+    // Match standard markdown table header and separator line
+    return /\|.*\|[\r\n]+\s*\|(?:[-:]+\s*\|)+/.test(content);
   };
 
   // Format numbers in text with commas (ignore markdown code blocks, links, and inline code)
@@ -127,9 +129,12 @@ export const useChatLogic = ({
         onConversationCreated?.(createRes.data);
       }
 
+      // Keep only recent context to avoid token limits (Sliding Window)
+      const recentContext = messages.slice(-10);
+
       const response = await api.post("/api/chatbot/message", {
         message: input,
-        history: messages,
+        history: recentContext,
       });
 
       const assistantMessage = {

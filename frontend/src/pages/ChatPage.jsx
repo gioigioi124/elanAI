@@ -126,18 +126,27 @@ const ChatPage = () => {
     }
   };
 
-  // Convert markdown table to Excel and download
+  // Convert markdown table to Excel and download safely
   const downloadTableAsExcel = (content, messageIndex) => {
     if (!content) return;
     const lines = content.split("\n");
     const tableLines = [];
     let inTable = false;
-    for (const line of lines) {
-      if (line.trim().startsWith("|")) {
+    
+    for (const rawLine of lines) {
+      const line = rawLine.trim();
+      if (line.startsWith("|")) {
         inTable = true;
-        if (!line.includes("---")) tableLines.push(line);
-      } else if (inTable) break;
+        // Ignore the markdown separator line (e.g., |---|:---: |)
+        if (!/^\|?\s*[-:]+[\s\-:|]*$/.test(line)) {
+          tableLines.push(line);
+        }
+      } else if (inTable) {
+        if (line === '') continue; // ignore empty lines after table rows
+        break;
+      }
     }
+    
     if (tableLines.length === 0) return;
     const tableData = tableLines.map((line) =>
       line
