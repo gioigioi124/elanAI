@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Send, RotateCcw, Download, PanelLeft } from "lucide-react";
+import { Send, RotateCcw, Download, PanelLeft, Copy, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useChatLogic } from "@/hooks/useChatLogic";
 import { useAuth } from "@/context/AuthContext";
@@ -9,8 +9,30 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import * as XLSX from "xlsx";
 import ChatSidebar from "@/components/ChatSidebar";
-import AnnoyingFly from "@/components/AnnoyingFly";
 import api from "@/services/api";
+
+const CopyButton = ({ content }) => {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(content);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <Button
+      size="sm"
+      variant="ghost"
+      onClick={handleCopy}
+      className="h-7 px-2 text-xs text-gray-500 hover:text-violet-700 bg-white/50 backdrop-blur-sm shadow-sm border border-white/60 gap-1.5"
+      title="Sao chép"
+    >
+      {copied ? <Check size={14} className="text-green-600" /> : <Copy size={14} />}
+      <span className={copied ? "text-green-600" : "hidden sm:inline"}>{copied ? "Đã chép" : "Copy"}</span>
+    </Button>
+  );
+};
 
 const ChatPage = () => {
   const { user } = useAuth();
@@ -156,9 +178,7 @@ const ChatPage = () => {
     messages.length === 1 && messages[0].role === "assistant";
 
   return (
-        <div className="flex h-screen w-full overflow-hidden bg-transparent">
-
-      <AnnoyingFly />
+    <div className="flex h-screen w-full overflow-hidden bg-transparent">
       {/* Sidebar */}
       <ChatSidebar
         conversations={conversations}
@@ -264,26 +284,29 @@ const ChatPage = () => {
                       className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
                     >
                       <div
-                        className={`max-w-[85%] sm:max-w-[75%] rounded-2xl text-sm relative ${
+                        className={`group max-w-[85%] sm:max-w-[75%] rounded-2xl text-sm relative ${
                           msg.role === "user"
                             ? "bg-gradient-to-br from-violet-500 to-violet-700 text-white rounded-tr-none p-4 shadow-lg"
-                            : hasTable(msg.content)
-                              ? "bg-white/60 backdrop-blur-md text-gray-800 shadow-md border border-white/40 rounded-tl-none p-4 pt-12"
-                              : "bg-white/60 backdrop-blur-md text-gray-800 shadow-md border border-white/40 rounded-tl-none p-4"
+                            : "bg-white/60 backdrop-blur-md text-gray-800 shadow-md border border-white/40 rounded-tl-none p-4"
                         }`}
                       >
-                        {msg.role === "assistant" && hasTable(msg.content) && (
-                          <Button
-                            size="sm"
-                            onClick={() =>
-                              downloadTableAsExcel(msg.content, index)
-                            }
-                            className="absolute top-2 right-2 bg-green-600 hover:bg-green-700 text-white gap-1.5 text-xs z-10"
-                            title="Tải bảng xuống Excel"
-                          >
-                            <Download size={14} />
-                            <span>Excel</span>
-                          </Button>
+                        {msg.role === "assistant" && (
+                          <div className="absolute top-2 right-2 flex gap-1.5 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                            <CopyButton content={msg.content} />
+                            {hasTable(msg.content) && (
+                              <Button
+                                size="sm"
+                                onClick={() =>
+                                  downloadTableAsExcel(msg.content, index)
+                                }
+                                className="h-7 px-2 bg-green-600 hover:bg-green-700 text-white gap-1.5 text-xs shadow-sm"
+                                title="Tải bảng xuống Excel"
+                              >
+                                <Download size={14} />
+                                <span className="hidden sm:inline">Excel</span>
+                              </Button>
+                            )}
+                          </div>
                         )}
                         {msg.role === "user" ? (
                           msg.content

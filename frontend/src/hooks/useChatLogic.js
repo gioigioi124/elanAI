@@ -66,21 +66,31 @@ export const useChatLogic = ({
     return content && content.includes("|") && content.includes("---");
   };
 
-  // Format numbers in text with commas
+  // Format numbers in text with commas (ignore markdown code blocks, links, and inline code)
   const formatNumbersInText = (text) => {
     if (!text) return text;
-    return text.replace(
-      /(?<![\w-])(\d+)(\.\d+)?(?![\w-])/g,
-      (match, intPart, decPart) => {
-        if (intPart.length < 4) return match;
-        if (intPart.startsWith("0")) return match;
-        if (!decPart && intPart.length >= 10 && intPart.length <= 11)
-          return match;
-        if (/^[A-Z]{2,}\d+$/i.test(match)) return match;
-        const formattedInt = parseInt(intPart, 10).toLocaleString("en-US");
-        return decPart ? formattedInt + decPart : formattedInt;
-      },
-    );
+    // Split the text by code blocks, inline code, and URLs/Links
+    const parts = text.split(/(`{3}[\s\S]*?`{3}|`[^`]*`|\[[^\]]*\]\([^)]*\)|https?:\/\/[^\s]+)/g);
+    
+    return parts.map((part, index) => {
+      // Even indices represent normal text, where we apply format
+      if (index % 2 === 0) {
+        return part.replace(
+          /(?<![\w-])(\d+)(\.\d+)?(?![\w-])/g,
+          (match, intPart, decPart) => {
+            if (intPart.length < 4) return match;
+            if (intPart.startsWith("0")) return match;
+            if (!decPart && intPart.length >= 10 && intPart.length <= 11)
+              return match;
+            if (/^[A-Z]{2,}\d+$/i.test(match)) return match;
+            const formattedInt = parseInt(intPart, 10).toLocaleString("en-US");
+            return decPart ? formattedInt + decPart : formattedInt;
+          }
+        );
+      }
+      // Odd indices represent markdown structures, return exactly as is
+      return part;
+    }).join("");
   };
 
   const scrollToBottom = useCallback(() => {
