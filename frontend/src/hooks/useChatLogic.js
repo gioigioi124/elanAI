@@ -20,6 +20,8 @@ export const useChatLogic = ({
   const inputRef = useRef(null);
   const saveTimeoutRef = useRef(null);
   const preventLoadRef = useRef(null);
+  const abortControllerRef = useRef(null);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   // Load messages when conversationId changes
   useEffect(() => {
@@ -104,6 +106,7 @@ export const useChatLogic = ({
     setMessages(newMessages);
     setInput("");
     setIsLoading(true);
+    abortControllerRef.current = new AbortController();
     inputRef.current?.focus();
 
     let currentConvId = conversationId;
@@ -128,6 +131,8 @@ export const useChatLogic = ({
       const token = JSON.parse(localStorage.getItem("user"))?.token || "";
       const apiUrl = (import.meta.env.VITE_API_URL || "http://localhost:3000") + "/api/chatbot/message";
 
+      setIsGenerating(true);
+
       const response = await fetch(apiUrl, {
         method: "POST",
         headers: {
@@ -139,6 +144,7 @@ export const useChatLogic = ({
           history: recentContext,
           conversationId: currentConvId,
         }),
+        signal: abortControllerRef.current.signal,
       });
 
       if (!response.ok) {
@@ -201,14 +207,27 @@ export const useChatLogic = ({
       onConversationUpdated?.();
 
     } catch (error) {
-      console.error("Chat error:", error);
-      let errorMessage = error.message || "Rất tiếc, đã có lỗi xảy ra. Vui lòng thử lại sau.";
-      const errorMessages = [
-        ...newMessages,
-        { role: "assistant", content: errorMessage },
-      ];
-      setMessages(errorMessages);
+      if (error.name === "AbortError") {
+         console.log("Chat generation stopped by user");
+      } else {
+         console.error("Chat error:", error);
+         let errorMessage = error.message || "Rất tiếc, đã có lỗi xảy ra. Vui lòng thử lại sau.";
+         const errorMessages = [
+           ...newMessages,
+           { role: "assistant", content: errorMessage },
+         ];
+         setMessages(errorMessages);
+      }
     } finally {
+      setIsLoading(false);
+      setIsGenerating(false);
+    }
+  };
+
+  const stopGenerating = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      setIsGenerating(false);
       setIsLoading(false);
     }
   };
@@ -223,12 +242,14 @@ export const useChatLogic = ({
     input,
     setInput,
     isLoading,
+    isGenerating,
     loadingConversation,
     messagesEndRef,
     inputRef,
     hasTable,
     formatNumbersInText,
     handleSend,
+    stopGenerating,
     handleNewChat,
     scrollToBottom,
   };

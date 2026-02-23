@@ -94,12 +94,14 @@ const ChatPage = () => {
     input,
     setInput,
     isLoading,
+    isGenerating,
     loadingConversation,
     messagesEndRef,
     inputRef,
     hasTable,
     formatNumbersInText,
     handleSend,
+    stopGenerating,
     handleNewChat: resetChat,
   } = useChatLogic({
     conversationId: currentConversationId,
@@ -395,7 +397,14 @@ const ChatPage = () => {
 
           <div className="shrink-0 bg-white/20 backdrop-blur-md border-t border-white/20 py-4">
             <form
-              onSubmit={handleSend}
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (isGenerating || isLoading) {
+                  stopGenerating?.();
+                } else {
+                  handleSend(e);
+                }
+              }}
               className="max-w-4xl mx-auto flex gap-3 px-4 sm:px-6"
             >
               <input
@@ -409,14 +418,28 @@ const ChatPage = () => {
                 autoCapitalize="off"
                 className="flex-1 bg-white/40 backdrop-blur-sm border border-white/40 focus:border-violet-400 rounded-2xl px-5 py-3.5 text-base focus:ring-2 focus:ring-violet-200 transition-all outline-none shadow-sm"
                 style={{ fontSize: "16px" }}
+                disabled={isGenerating}
               />
               <Button
                 type="submit"
-                disabled={!input.trim() || isLoading}
-                className="h-[54px] px-6 gap-2 bg-gradient-to-r from-violet-500 to-violet-700 hover:from-violet-600 hover:to-violet-800 text-white rounded-2xl shadow-md"
+                disabled={!input.trim() && !isGenerating && !isLoading}
+                className={`h-[54px] px-6 gap-2 text-white rounded-2xl shadow-md transition-all ${
+                  isGenerating || isLoading
+                    ? "bg-red-500 hover:bg-red-600"
+                    : "bg-gradient-to-r from-violet-500 to-violet-700 hover:from-violet-600 hover:to-violet-800"
+                }`}
               >
-                <Send size={20} />
-                {!isMobile && <span>Gửi</span>}
+                {isGenerating || isLoading ? (
+                  <>
+                    <div className="w-5 h-5 bg-white rounded-sm"></div>
+                    {!isMobile && <span>Dừng</span>}
+                  </>
+                ) : (
+                  <>
+                    <Send size={20} />
+                    {!isMobile && <span>Gửi</span>}
+                  </>
+                )}
               </Button>
             </form>
           </div>

@@ -5,7 +5,7 @@ Danh sách các tác vụ cần thực hiện nhằm nâng cấp hệ thống Ch
 ## 1. Trải nghiệm tương tác cốt lõi (Core UX)
 
 - [x] **Hiệu ứng Streaming:** Chuyển đổi API trả lời từ REST thuần sang Server-Sent Events (SSE) để chữ hiện ra từng từ một.
-- [ ] **Nút "Regenerate" & "Stop":** Thêm khả năng tạo lại câu trả lời cuối cùng và dừng khi AI đang sinh chữ.
+- [x] **Nút "Regenerate" & "Stop":** Thêm khả năng tạo lại câu trả lời cuối cùng và dừng khi AI đang sinh chữ.
 - [x] **Quản lý Context Window / Lịch sử hội thoại:** Xử lý việc không gửi toàn bộ dữ liệu lịch sử lớn từ frontend (có thể Backend sẽ tự quản lý session history, hoặc dùng Sliding Window).
 
 ## 2. Các rủi ro logic tiềm ẩn trong Source Code
