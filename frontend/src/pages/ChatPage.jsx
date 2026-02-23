@@ -147,7 +147,7 @@ const ChatPage = () => {
     messages.length === 1 && messages[0].role === "assistant";
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-transparent">
+    <div className="flex w-full overflow-hidden bg-transparent" style={{ height: '100dvh' }}>
       <AnnoyingFly />
       {/* Sidebar */}
       <ChatSidebar
@@ -225,8 +225,7 @@ const ChatPage = () => {
                       Xin chào{user?.name ? `, ${user.name}` : ""}!
                     </h2>
                     <p className="text-lg text-gray-500 max-w-xl">
-                      Tôi có thể giúp bạn về giá bông, công nợ, khách hàng, tính
-                      giá vận chuyển và nhiều thông tin khác.
+                      Giá bông, mút, công nợ, khách hàng, tính giá ... và nhiều thông tin khác.
                     </p>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-4xl">
