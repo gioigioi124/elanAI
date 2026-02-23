@@ -21,6 +21,6 @@ router.post(
   uploadKnowledgeBase,
 ); // Max 10 files
 router.post("/delete-file", protect, authorize("admin"), deleteKnowledgeBase);
-router.post("/message", chat); // Chat can be public or semi-public depending on use case
+router.post("/message", protect, chat); // Protected to enable conversation history saving
 
 export default router;

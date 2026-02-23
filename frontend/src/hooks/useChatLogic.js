@@ -19,11 +19,17 @@ export const useChatLogic = ({
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
   const saveTimeoutRef = useRef(null);
+  const preventLoadRef = useRef(null);
 
   // Load messages when conversationId changes
   useEffect(() => {
     if (!conversationId) {
       setMessages([DEFAULT_WELCOME]);
+      return;
+    }
+
+    if (preventLoadRef.current === conversationId) {
+      preventLoadRef.current = null;
       return;
     }
 
@@ -44,22 +50,8 @@ export const useChatLogic = ({
     loadConversation();
   }, [conversationId]);
 
-  // Save messages to API (debounced)
-  const saveMessages = useCallback(
-    (msgs, convId) => {
-      if (!convId) return;
-      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-      saveTimeoutRef.current = setTimeout(async () => {
-        try {
-          await api.put(`/api/conversations/${convId}`, { messages: msgs });
-          onConversationUpdated?.();
-        } catch (error) {
-          console.error("Error saving conversation:", error);
-        }
-      }, 800);
-    },
-    [onConversationUpdated],
-  );
+  // Save messages to API (debounced) - TRÌ HOÃN BẰNG REACT SETTIMEOUT ĐÃ BỊ LOẠI BỎ (Fix Data Loss)
+  // Backend bây giờ tự push message thẳng tại API streaming
 
   // Check if message contains a markdown table safely
   const hasTable = (content) => {
@@ -123,42 +115,99 @@ export const useChatLogic = ({
           input.length > 60 ? input.substring(0, 60) + "..." : input;
         const createRes = await api.post("/api/conversations", {
           title,
-          messages: newMessages,
+          messages: [DEFAULT_WELCOME], // Backend sẽ tự push user msg và bot msg sau
         });
         currentConvId = createRes.data._id;
+        preventLoadRef.current = currentConvId;
         onConversationCreated?.(createRes.data);
       }
 
       // Keep only recent context to avoid token limits (Sliding Window)
       const recentContext = messages.slice(-10);
 
-      const response = await api.post("/api/chatbot/message", {
-        message: input,
-        history: recentContext,
+      const token = JSON.parse(localStorage.getItem("user"))?.token || "";
+      const apiUrl = (import.meta.env.VITE_API_URL || "http://localhost:3000") + "/api/chatbot/message";
+
+      const response = await fetch(apiUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          message: input,
+          history: recentContext,
+          conversationId: currentConvId,
+        }),
       });
 
-      const assistantMessage = {
-        role: "assistant",
-        content: response.data.reply,
-      };
-      const finalMessages = [...newMessages, assistantMessage];
-      setMessages(finalMessages);
-      saveMessages(finalMessages, currentConvId);
+      if (!response.ok) {
+         let errorMsg = "Lỗi kết nối Server";
+         try {
+           const errData = await response.json();
+           if (errData.message) errorMsg = errData.message;
+         } catch(e) {}
+         throw new Error(errorMsg);
+      }
+
+      setIsLoading(false); // Stop loading animation, start streaming animation
+      setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
+      
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder("utf-8");
+      let streamContent = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunkStr = decoder.decode(value, { stream: true });
+        const lines = chunkStr.split("\n");
+        for (const line of lines) {
+          if (line.startsWith("data: ")) {
+            const dataStr = line.replace("data: ", "").trim();
+            if (dataStr === "[DONE]") break;
+            try {
+              const data = JSON.parse(dataStr);
+              if (data.text) {
+                streamContent += data.text;
+                // Cập nhật UI ngay lập tức với từ mới
+                setMessages((prev) => {
+                  const updated = [...prev];
+                  updated[updated.length - 1] = {
+                    role: "assistant",
+                    content: streamContent,
+                  };
+                  return updated;
+                });
+                scrollToBottom();
+              } else if (data.error) {
+                 streamContent += `\n\n**Lỗi:** ${data.error}`;
+                 setMessages((prev) => {
+                  const updated = [...prev];
+                  updated[updated.length - 1] = { role: "assistant", content: streamContent };
+                  return updated;
+                 });
+                 scrollToBottom();
+              }
+            } catch (e) {
+              // Ignore fragmented chunk
+            }
+          }
+        }
+      }
+      
+      // Request refresh conversation list after stream finishes (for updated timestamps)
+      onConversationUpdated?.();
+
     } catch (error) {
       console.error("Chat error:", error);
-      let errorMessage = "Rất tiếc, đã có lỗi xảy ra. Vui lòng thử lại sau.";
-      if (error.response?.status === 429 || error.response?.data?.isRateLimit) {
-        errorMessage =
-          "⏱️ Đã vượt quá giới hạn request của ElanX API. Vui lòng đợi 10-15 giây rồi thử lại.";
-      } else if (error.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      }
+      let errorMessage = error.message || "Rất tiếc, đã có lỗi xảy ra. Vui lòng thử lại sau.";
       const errorMessages = [
         ...newMessages,
         { role: "assistant", content: errorMessage },
       ];
       setMessages(errorMessages);
-      if (currentConvId) saveMessages(errorMessages, currentConvId);
     } finally {
       setIsLoading(false);
     }

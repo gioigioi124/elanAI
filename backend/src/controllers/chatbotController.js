@@ -1,6 +1,7 @@
 import { genAI, pc, indexName } from "../config/ai.js";
 import xlsx from "xlsx";
 import KnowledgeBaseFile from "../models/KnowledgeBaseFile.js";
+import Conversation from "../models/Conversation.js";
 
 // ===== In-memory metadata cache =====
 // Caches numeric field names from uploaded data so chat() doesn't need a sample query each time.
@@ -212,7 +213,7 @@ export const uploadKnowledgeBase = async (req, res) => {
 
 export const chat = async (req, res) => {
   try {
-    const { message, history = [] } = req.body;
+    const { message, history = [], conversationId } = req.body;
 
     if (!message) {
       return res.status(400).json({ message: "Message is required" });
@@ -497,13 +498,13 @@ HƯỚNG DẪN TRẢ LỜI:
       geminiHistory.shift();
     }
 
-    let result;
+    let resultStream;
     try {
       const chatInstance = model.startChat({
         history: geminiHistory,
       });
 
-      result = await chatInstance.sendMessage(message);
+      resultStream = await chatInstance.sendMessageStream(message);
     } catch (genError) {
       console.error("Gemini Generation Error:", genError);
       if (genError.status === 429 || genError.message?.includes("quota")) {
@@ -516,8 +517,50 @@ HƯỚNG DẪN TRẢ LỜI:
       throw new Error(`Generation failed: ${genError.message}`);
     }
 
-    const reply = result.response.text();
-    res.status(200).json({ reply });
+    // Prepare response headers for SSE
+    res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
+    res.setTimeout(0); // Disable socket timeout for long replies
+
+    try {
+      let fullReply = "";
+      for await (const chunk of resultStream.stream) {
+        const chunkText = chunk.text();
+        fullReply += chunkText;
+        if (chunkText) {
+          res.write(`data: ${JSON.stringify({ text: chunkText })}\n\n`);
+        }
+      }
+      
+      // Streaming finished: Append messages to the conversation automatically (Data Loss safe)
+      if (conversationId && req.user?._id) {
+         try {
+           await Conversation.findOneAndUpdate(
+             { _id: conversationId, userId: req.user._id },
+             {
+               $push: {
+                 messages: {
+                   $each: [
+                     { role: "user", content: message },
+                     { role: "assistant", content: fullReply }
+                   ]
+                 }
+               }
+             }
+           );
+         } catch(dbErr) {
+            console.error("Error saving conversation to DB:", dbErr);
+         }
+      }
+
+      res.write("data: [DONE]\n\n");
+      res.end();
+    } catch (streamError) {
+      console.error("Stream generation error:", streamError);
+      res.write(`data: ${JSON.stringify({ error: "Lỗi khi tạo stream phản hồi" })}\n\n`);
+      res.end();
+    }
   } catch (error) {
     console.error("Chat error details:", {
       message: error.message,
