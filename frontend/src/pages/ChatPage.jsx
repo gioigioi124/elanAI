@@ -147,7 +147,7 @@ const ChatPage = () => {
     messages.length === 1 && messages[0].role === "assistant";
 
   return (
-    <div className="flex w-full overflow-hidden bg-transparent" style={{ height: '100dvh' }}>
+    <div className="flex w-full overflow-hidden bg-transparent" style={{ height: '100svh' }}>
       <AnnoyingFly />
       {/* Sidebar */}
       <ChatSidebar
