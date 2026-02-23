@@ -21,16 +21,25 @@ const ChatPage = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
 
-  // Detect mobile
+  const [windowHeight, setWindowHeight] = useState(window.innerHeight);
+
+  // Detect mobile & track real viewport height
   useEffect(() => {
-    const checkMobile = () => {
+    const handleResize = () => {
       const mobile = window.innerWidth < 1024;
       setIsMobile(mobile);
       if (mobile) setSidebarOpen(false);
+      setWindowHeight(window.innerHeight);
     };
-    checkMobile();
-    window.addEventListener("resize", checkMobile);
-    return () => window.removeEventListener("resize", checkMobile);
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    window.addEventListener("orientationchange", () => {
+      setTimeout(() => setWindowHeight(window.innerHeight), 100);
+    });
+    return () => {
+      window.removeEventListener("resize", handleResize);
+      window.removeEventListener("orientationchange", handleResize);
+    };
   }, []);
 
   // Load conversations list
@@ -147,7 +156,7 @@ const ChatPage = () => {
     messages.length === 1 && messages[0].role === "assistant";
 
   return (
-    <div className="flex w-full overflow-hidden bg-transparent" style={{ height: '100svh' }}>
+    <div className="flex w-full overflow-hidden bg-transparent" style={{ height: `${windowHeight}px` }}>
       <AnnoyingFly />
       {/* Sidebar */}
       <ChatSidebar
