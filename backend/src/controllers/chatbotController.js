@@ -1,4 +1,5 @@
-import { genAI, pc, indexName } from "../config/ai.js";
+import { genAI } from "../config/ai.js";
+import { supabase } from "../config/supabase.js";
 import xlsx from "xlsx";
 import KnowledgeBaseFile from "../models/KnowledgeBaseFile.js";
 import Conversation from "../models/Conversation.js";
@@ -24,7 +25,6 @@ export const uploadKnowledgeBase = async (req, res) => {
       return res.status(400).json({ message: "No files uploaded" });
     }
 
-    const index = pc.index(indexName);
     const results = [];
     let totalDocuments = 0;
 
@@ -47,14 +47,14 @@ export const uploadKnowledgeBase = async (req, res) => {
 
         const filename = file.originalname;
 
-        // 1. Clear old data from Pinecone (ignore 404 if index is empty/new)
-        try {
-          await index.deleteMany({ source: { $eq: filename } });
-        } catch (deleteErr) {
-          // 404 means no vectors exist yet for this source — safe to ignore
-          if (!deleteErr.message?.includes("404") && deleteErr.status !== 404) {
-            throw deleteErr;
-          }
+        // 1. Clear old data from Supabase pgvector
+        const { error: deleteError } = await supabase
+          .from("documents")
+          .delete()
+          .eq("source", filename);
+
+        if (deleteError) {
+          console.warn("Delete old data warning:", deleteError.message);
         }
 
         // 2. Clear meta info from MongoDB if exists
@@ -141,13 +141,24 @@ export const uploadKnowledgeBase = async (req, res) => {
                   },
                 );
 
-                const upsertData = chunk.map((doc, idx) => ({
+                // Insert into Supabase pgvector
+                const rows = chunk.map((doc, idx) => ({
                   id: doc.id,
-                  values: batchEmbeddings.embeddings[idx].values,
+                  content: doc.content,
+                  embedding: JSON.stringify(batchEmbeddings.embeddings[idx].values),
                   metadata: doc.metadata,
+                  source: doc.metadata.source,
                 }));
 
-                await index.upsert(upsertData);
+                // Supabase batch insert (upsert to handle potential ID conflicts)
+                const { error: upsertError } = await supabase
+                  .from("documents")
+                  .upsert(rows);
+
+                if (upsertError) {
+                  throw new Error(`Supabase upsert failed: ${upsertError.message}`);
+                }
+
                 return chunk.length;
               })(),
             );
@@ -219,9 +230,14 @@ export const chat = async (req, res) => {
       return res.status(400).json({ message: "Message is required" });
     }
 
-    const index = pc.index(indexName);
+    // 1. Create embedding + prefetch metadata in PARALLEL
+    const looksLikeFilterQuery = FILTER_KEYWORDS_REGEX.test(message);
 
-    // 1. Create embedding for user query
+    // Prefetch metadata if needed (runs in parallel with embedding)
+    const metadataPrefetch = (looksLikeFilterQuery && !cachedNumericFields)
+      ? supabase.from("documents").select("metadata").limit(3)
+      : null;
+
     let embeddingResult;
     try {
       const embeddingModel = genAI.getGenerativeModel({
@@ -251,26 +267,18 @@ export const chat = async (req, res) => {
     let metadataFilter = null;
     let isFilterQuery = false;
 
-    // Quick regex check: only call Gemini filter analyzer if the question looks like a filter query
-    const looksLikeFilterQuery = FILTER_KEYWORDS_REGEX.test(message);
-
     if (looksLikeFilterQuery) {
       try {
-        // Use cached metadata fields if available, otherwise do a quick sample query
+        // Use cached metadata fields if available, or resolve the prefetched promise
         let numericFields = cachedNumericFields;
 
-        if (!numericFields) {
-          const sampleResponse = await index.query({
-            vector: queryEmbedding,
-            topK: 3,
-            includeMetadata: true,
-          });
+        if (!numericFields && metadataPrefetch) {
+          const { data: sampleData } = await metadataPrefetch;
 
-          const sampleMatches = sampleResponse.matches || [];
           const allFieldsMap = new Map();
-          sampleMatches.forEach((match) => {
-            if (!match.metadata) return;
-            Object.entries(match.metadata).forEach(([k, v]) => {
+          (sampleData || []).forEach((row) => {
+            if (!row.metadata) return;
+            Object.entries(row.metadata).forEach(([k, v]) => {
               if (
                 k !== "text" &&
                 k !== "source" &&
@@ -343,9 +351,9 @@ CRITICAL RULES:
 
               if (matchedField) {
                 metadataFilter = {
-                  [matchedField.name]: {
-                    [filterInfo.operator]: filterInfo.value,
-                  },
+                  field: matchedField.name,
+                  operator: filterInfo.operator,
+                  value: filterInfo.value,
                 };
                 isFilterQuery = true;
               }
@@ -357,126 +365,96 @@ CRITICAL RULES:
       }
     }
 
-    // 3. Main Pinecone query (with or without metadata filter)
-    // Determine topK based on query type
+    // 3. Main pgvector query (with or without metadata filter)
     const isListQuery = LIST_KEYWORDS_REGEX.test(message);
-    const regularTopK = isListQuery ? 50 : 10;
+    const regularTopK = isListQuery ? 20 : 10;
+    const topK = isFilterQuery ? 100 : regularTopK;
 
-    let queryResponse;
+    let matches;
     try {
-      const queryParams = {
-        vector: queryEmbedding,
-        topK: isFilterQuery ? 100 : regularTopK,
-        includeMetadata: true,
+      const rpcParams = {
+        query_embedding: JSON.stringify(queryEmbedding),
+        match_count: topK,
       };
 
       if (metadataFilter) {
-        queryParams.filter = metadataFilter;
+        rpcParams.filter_field = metadataFilter.field;
+        rpcParams.filter_operator = metadataFilter.operator;
+        rpcParams.filter_value = metadataFilter.value;
       }
 
-      queryResponse = await index.query(queryParams);
+      const { data, error } = await supabase.rpc("match_documents", rpcParams);
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      matches = (data || []).map((row) => ({
+        score: row.similarity,
+        metadata: {
+          ...row.metadata,
+          text: row.metadata?.text || row.content,
+          source: row.source,
+        },
+      }));
 
       // Fallback: if filter returned no results, retry without filter
-      if (isFilterQuery && queryResponse.matches.length === 0) {
-        console.log(
-          "[Smart Filter] No results with filter, falling back to regular search",
+      if (isFilterQuery && matches.length === 0) {
+        const { data: fallbackData, error: fallbackError } = await supabase.rpc(
+          "match_documents",
+          {
+            query_embedding: JSON.stringify(queryEmbedding),
+            match_count: regularTopK,
+          },
         );
-        queryResponse = await index.query({
-          vector: queryEmbedding,
-          topK: regularTopK,
-          includeMetadata: true,
-        });
+
+        if (fallbackError) {
+          throw new Error(fallbackError.message);
+        }
+
+        matches = (fallbackData || []).map((row) => ({
+          score: row.similarity,
+          metadata: {
+            ...row.metadata,
+            text: row.metadata?.text || row.content,
+            source: row.source,
+          },
+        }));
         isFilterQuery = false;
       }
-    } catch (pcError) {
-      console.error("Pinecone Query Error:", pcError);
-      if (pcError.status === 429 || pcError.message?.includes("Rate limit")) {
-        return res.status(429).json({
-          message:
-            "Giới hạn truy vấn database (Pinecone) đã đạt. Vui lòng thử lại sau.",
-          error: pcError.message,
-          source: "pinecone",
-        });
-      }
-      throw new Error(`Pinecone query failed: ${pcError.message}`);
+    } catch (dbError) {
+      console.error("pgvector Query Error:", dbError);
+      throw new Error(`pgvector query failed: ${dbError.message}`);
     }
 
-    // For filter queries, skip score threshold (results are already pre-filtered by Pinecone)
+    // For filter queries, skip score threshold (results are already pre-filtered)
     // For regular queries, filter low-score results to reduce noise
     const threshold = isFilterQuery ? 0 : 0.25;
-    const filteredMatches = queryResponse.matches.filter(
+    const filteredMatches = matches.filter(
       (match) => match.score >= threshold,
     );
 
     const context = filteredMatches
-      .map(
-        (match) =>
-          `[Nguồn: ${match.metadata.source || "Unknown"}, Độ liên quan: ${Math.round(match.score * 100)}%]: ${match.metadata.text}`,
-      )
-      .join("\n---\n");
+      .map((match) => {
+        // Strip redundant prefix to save tokens
+        let text = match.metadata.text || "";
+        text = text.replace(/^Nguồn dữ liệu: [^,]+, /, "");
+        return text;
+      })
+      .join("\n");
 
-    const filterContext = isFilterQuery
-      ? `\n\nLƯU Ý: Dữ liệu trên đã được LỌC TRƯỚC theo tiêu chí số từ câu hỏi của người dùng. Tất cả ${filteredMatches.length} kết quả đều thỏa mãn điều kiện lọc. Hãy liệt kê TẤT CẢ kết quả.`
-      : "";
+    const filterHint = isFilterQuery ? ` Dữ liệu đã lọc theo điều kiện số, liệt kê tất cả.` : "";
 
-    // Truncation hint: let Gemini know if results might be incomplete
-    const usedTopK = isFilterQuery ? 100 : regularTopK;
-    const mayBeTruncated = filteredMatches.length >= usedTopK * 0.8; // if we got near the limit
-    const truncationHint = mayBeTruncated
-      ? `\n\nLƯU Ý QUAN TRỌNG: Kết quả trả về có thể CHƯA ĐẦY ĐỦ (đang hiển thị ${filteredMatches.length} kết quả). Nếu người dùng muốn xem thêm, hãy gợi ý họ hỏi cụ thể hơn hoặc yêu cầu "liệt kê tất cả" hoặc "xem thêm" để nhận được đầy đủ dữ liệu.`
-      : "";
+    const systemPrompt = `Trợ lý AI tra cứu dữ liệu doanh nghiệp. Trả lời CHỈ dựa vào context dưới đây.${filterHint}
 
-    const systemPrompt = `Bạn là một trợ lý AI hỗ trợ quản lý thông tin của doanh nghiệp. 
-Kiến thức của bạn được lấy từ các tệp dữ liệu đã tải lên, bao gồm thông tin khách hàng, công nợ, bảng giá vận chuyển (ví dụ: giá bông), và các tài liệu khác.
+Context:
+${context || "Không có dữ liệu."}
 
-Dưới đây là dữ liệu liên quan tìm được từ bộ nhớ kiến thức (context):
-${context || "KHÔNG CÓ DỮ LIỆU PHÙ HỢP TRONG NGỮ CẢNH."}${filterContext}${truncationHint}
-
-HƯỚNG DẪN TRẢ LỜI:
-1. Trả lời dựa TRỰC TIẾP và CHỈ DỰA VÀO ngữ cảnh được cung cấp ở trên.
-2. Nếu người dùng hỏi về "cao nhất", "thấp nhất" hoặc yêu cầu so sánh, hãy quét qua tất cả các dòng trong ngữ cảnh và tìm giá trị tương ứng để trả lời.
-3. Nếu ngữ cảnh chứa thông tin về giá vận chuyển, hãy cung cấp chính xác con số và địa điểm.
-4. Nếu người dùng hỏi về thông tin không có trong ngữ cảnh, hãy thông báo rõ là không tìm thấy.
-5. Khi có nhiều thông tin tương tự (ví dụ: cước đi nhiều nơi ở tỉnh đó), hãy liệt kê đầy đủ.
-6. Luôn ưu tiên độ chính xác tuyệt đối từ dữ liệu nguồn.
-7. Khi tính toán để trả về giá trị, hãy để 2 chữ số thập phân nếu có.
-8. QUAN TRỌNG VỀ ĐỊNH DẠNG SỐ: Giữ nguyên các giá trị số ĐÚNG NGUYÊN BẢN từ dữ liệu nguồn. TUYỆT ĐỐI KHÔNG thêm dấu phẩy hoặc dấu chấm vào giữa số. Ví dụ: nếu dữ liệu nguồn là 1.328725 thì phải giữ nguyên là 1.328725, KHÔNG ĐƯỢC viết thành 1.328,725 hay 1,328.725. Dấu chấm trong số thập phân là dấu phân cách thập phân, KHÔNG phải dấu phân cách hàng nghìn.
-
-ĐỊNH DẠNG TRẢ LỜI (BẮT BUỘC):
-7. **LUÔN LUÔN sử dụng BẢNG MARKDOWN** khi liệt kê dữ liệu (từ 2 items trở lên).
-   KHÔNG BAO GIỜ dùng bullet points (*), numbered list, hoặc line breaks để liệt kê.
-   
-8. Format bảng markdown CHÍNH XÁC như sau:
-   | Tên cột 1 | Tên cột 2 | Tên cột 3 |
-   |-----------|-----------|-----------|
-   | Giá trị 1 | Giá trị 2 | Giá trị 3 |
-   | Giá trị 1 | Giá trị 2 | Giá trị 3 |
-   
-   LƯU Ý: 
-   - Dòng đầu tiên là header (tên cột)
-   - Dòng thứ hai PHẢI có dấu gạch ngang |---|---|
-   - Mỗi dòng dữ liệu sau đó là một row
-
-9. Ví dụ CỤ THỂ cho câu hỏi "giá bông":
-   
-   Dưới đây là các thông tin về giá bông được tìm thấy:
-   
-   | Loại giá bông | Điều kiện | Giá (VNĐ) |
-   |---------------|-----------|-----------|
-   | Giá bông theo điều kiện đặt tiền | - | 31000 |
-   | Giá bông không đặt tiền | - | 31000 |
-   | Giá bông đặt tiền tối thiểu 30 triệu/lần | - | 26700 |
-   | Giá bông ghé đặt tiền | - | 27700 |
-   | Giá bông đã tính vận chuyển | - | 27200 |
-   | Giá bông thạch thất | Đã tính vận chuyển | 27200 |
-
-10. TUYỆT ĐỐI KHÔNG trả lời dạng này:
-    ❌ "Giá bông theo điều kiện đặt tiền: 31000"
-    ❌ "- Giá bông không đặt tiền là 31000"
-    ❌ "Giá bông đặt tiền tối thiểu 30 triệu/lần là 26700"
-    
-    ✅ Chỉ trả lời dạng BẢNG MARKDOWN như ví dụ trên.
-11. Luôn ưu tiên tìm giá có sẵn kể cả với câu hỏi tính giá, khi không tìm thấy thì mới dùng công thức hoặc ví dụ để thực hiện tính giá
+Quy tắc:
+- Dùng BẢNG MARKDOWN khi liệt kê (≥2 items), tính giá, so sánh. Không dùng bullet/numbered list.
+- Giữ nguyên số từ dữ liệu nguồn, không format lại.
+- Không có thông tin → nói rõ không tìm thấy.
+- Ưu tiên giá có sẵn, chỉ tính khi không tìm thấy.
 `;
 
     // 4. Generate response with Gemini
@@ -525,6 +503,7 @@ HƯỚNG DẪN TRẢ LỜI:
 
     try {
       let fullReply = "";
+
       for await (const chunk of resultStream.stream) {
         const chunkText = chunk.text();
         fullReply += chunkText;
@@ -562,13 +541,7 @@ HƯỚNG DẪN TRẢ LỜI:
       res.end();
     }
   } catch (error) {
-    console.error("Chat error details:", {
-      message: error.message,
-      status: error.status,
-      statusText: error.statusText,
-      details: error.details,
-      stack: error.stack,
-    });
+    console.error("Chat error:", error.message);
 
     // Check if it's a rate limit error
     if (
@@ -596,10 +569,15 @@ export const deleteKnowledgeBase = async (req, res) => {
       return res.status(400).json({ message: "Filename is required" });
     }
 
-    const index = pc.index(indexName);
+    // 1. Delete from Supabase pgvector
+    const { error: deleteError } = await supabase
+      .from("documents")
+      .delete()
+      .eq("source", filename);
 
-    // 1. Delete from Pinecone
-    await index.deleteMany({ source: { $eq: filename } });
+    if (deleteError) {
+      throw new Error(`Supabase delete failed: ${deleteError.message}`);
+    }
 
     // 2. Delete from MongoDB
     await KnowledgeBaseFile.findOneAndDelete({ filename: filename });

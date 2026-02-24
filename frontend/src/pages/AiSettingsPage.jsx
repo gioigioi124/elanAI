@@ -37,8 +37,8 @@ const AiSettingsPage = () => {
             <div className="px-4 py-2 bg-indigo-50 rounded-lg text-indigo-700 text-sm font-medium">
               ElanX Flash-Latest
             </div>
-            <div className="px-4 py-2 bg-purple-50 rounded-lg text-purple-700 text-sm font-medium">
-              Pinecone DB
+            <div className="px-4 py-2 bg-green-50 rounded-lg text-green-700 text-sm font-medium">
+              Supabase pgvector
             </div>
           </div>
         </div>

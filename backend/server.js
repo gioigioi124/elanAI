@@ -67,5 +67,40 @@ connectDB().then(() => {
   //  tạo lắng nghe trên cổng 3000
   server.listen(PORT, () => {
     console.log(`server bắt đầu trên cổng ${PORT}`);
+    // Warmup connections to eliminate cold start on first request
+    warmup();
   });
 });
+
+// Graceful shutdown: release port immediately when nodemon restarts
+const gracefulShutdown = () => {
+  server.close(() => process.exit(0));
+  setTimeout(() => process.exit(0), 3000);
+};
+process.on("SIGINT", gracefulShutdown);
+process.on("SIGTERM", gracefulShutdown);
+process.once("SIGUSR2", () => {
+  server.close(() => process.kill(process.pid, "SIGUSR2"));
+});
+
+// Pre-establish connections to Gemini API + Supabase so first user request is fast
+async function warmup() {
+  try {
+    const { genAI } = await import("./src/config/ai.js");
+    const { supabase } = await import("./src/config/supabase.js");
+
+    await Promise.allSettled([
+      genAI.getGenerativeModel({ model: "models/gemini-embedding-001" })
+        .embedContent({
+          content: { parts: [{ text: "warmup" }] },
+          taskType: "RETRIEVAL_QUERY",
+          outputDimensionality: 768,
+        }),
+      supabase.from("documents").select("id").limit(1),
+      genAI.getGenerativeModel({ model: "models/gemini-2.5-flash" })
+        .generateContent("hi"),
+    ]);
+  } catch (err) {
+    // Warmup failure is non-critical
+  }
+}
