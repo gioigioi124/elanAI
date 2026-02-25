@@ -458,9 +458,10 @@ ${context || "Không có dữ liệu."}
 
 Quy tắc:
 - Dùng BẢNG MARKDOWN khi liệt kê (≥2 items), tính giá, so sánh. Không dùng bullet/numbered list.
-- Giữ nguyên số từ dữ liệu nguồn, không format lại, khi tính giá kết quả để 2 số thập phân.
+- Giữ nguyên số từ dữ liệu nguồn, không format lại.
 - Không có thông tin → nói rõ không tìm thấy.
 - Ưu tiên giá có sẵn, chỉ tính khi không tìm thấy.
+- luôn trả về giá 1cm chiều cao khi tính giá mút.
 `;
 
     // 4. Generate response with Gemini
