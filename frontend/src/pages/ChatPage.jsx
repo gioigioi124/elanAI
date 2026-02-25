@@ -1,10 +1,16 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Send, RotateCcw, Download, PanelLeft, Copy, Check } from "lucide-react";
+import {
+  Send,
+  RotateCcw,
+  Download,
+  PanelLeft,
+  Copy,
+  Check,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useChatLogic } from "@/hooks/useChatLogic";
 import { useAuth } from "@/context/AuthContext";
-import { useNavigate } from "react-router";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import * as XLSX from "xlsx";
@@ -28,22 +34,25 @@ const CopyButton = ({ content }) => {
       className="h-7 px-2 text-xs text-gray-500 hover:text-violet-700 bg-white/50 backdrop-blur-sm shadow-sm border border-white/60 gap-1.5"
       title="Sao chép"
     >
-      {copied ? <Check size={14} className="text-green-600" /> : <Copy size={14} />}
-      <span className={copied ? "text-green-600" : "hidden sm:inline"}>{copied ? "Đã chép" : "Copy"}</span>
+      {copied ? (
+        <Check size={14} className="text-green-600" />
+      ) : (
+        <Copy size={14} />
+      )}
+      <span className={copied ? "text-green-600" : "hidden sm:inline"}>
+        {copied ? "Đã chép" : "Copy"}
+      </span>
     </Button>
   );
 };
 
 const ChatPage = () => {
   const { user } = useAuth();
-  const navigate = useNavigate();
 
   const [conversations, setConversations] = useState([]);
   const [currentConversationId, setCurrentConversationId] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
-
-  const [windowHeight, setWindowHeight] = useState(window.innerHeight);
 
   // Detect mobile & track real viewport height
   useEffect(() => {
@@ -51,13 +60,10 @@ const ChatPage = () => {
       const mobile = window.innerWidth < 1024;
       setIsMobile(mobile);
       if (mobile) setSidebarOpen(false);
-      setWindowHeight(window.innerHeight);
     };
     handleResize();
     window.addEventListener("resize", handleResize);
-    window.addEventListener("orientationchange", () => {
-      setTimeout(() => setWindowHeight(window.innerHeight), 100);
-    });
+    window.addEventListener("orientationchange", handleResize);
     return () => {
       window.removeEventListener("resize", handleResize);
       window.removeEventListener("orientationchange", handleResize);
@@ -134,21 +140,30 @@ const ChatPage = () => {
     const lines = content.split("\n");
     const tableLines = [];
     let inTable = false;
-    
+
     for (const rawLine of lines) {
       const line = rawLine.trim();
-      if (line.startsWith("|")) {
-        inTable = true;
-        // Ignore the markdown separator line (e.g., |---|:---: |)
-        if (!/^\|?\s*[-:]+[\s\-:|]*$/.test(line)) {
-          tableLines.push(line);
+      if (line.includes("|")) {
+        // Only consider it a table if it has pipes
+        // Ignore the markdown separator line (e.g., |---|:---: | or ---|---)
+        const isSeparator =
+          /^\|?[:\s-]+\|[:\s-]*\|?$/.test(line) && line.includes("-");
+
+        if (isSeparator) {
+          inTable = true;
+          continue;
         }
+
+        // If we found a pipe and it's not a separator, it's likely a header or row
+        // We set inTable = true to start capturing
+        inTable = true;
+        tableLines.push(line);
       } else if (inTable) {
-        if (line === '') continue; // ignore empty lines after table rows
+        if (line === "") continue; // ignore empty lines within table
         break;
       }
     }
-    
+
     if (tableLines.length === 0) return;
     const tableData = tableLines.map((line) =>
       line
@@ -266,7 +281,8 @@ const ChatPage = () => {
                       Xin chào{user?.name ? `, ${user.name}` : ""}!
                     </h2>
                     <p className="text-lg text-gray-500 max-w-xl">
-                      Giá bông, mút, công nợ, khách hàng, tính giá ... và nhiều thông tin khác.
+                      Giá bông, mút, công nợ, khách hàng, tính giá ... và nhiều
+                      thông tin khác.
                     </p>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-4xl">
