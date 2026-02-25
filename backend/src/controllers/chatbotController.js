@@ -145,7 +145,9 @@ export const uploadKnowledgeBase = async (req, res) => {
                 const rows = chunk.map((doc, idx) => ({
                   id: doc.id,
                   content: doc.content,
-                  embedding: JSON.stringify(batchEmbeddings.embeddings[idx].values),
+                  embedding: JSON.stringify(
+                    batchEmbeddings.embeddings[idx].values,
+                  ),
                   metadata: doc.metadata,
                   source: doc.metadata.source,
                 }));
@@ -156,7 +158,9 @@ export const uploadKnowledgeBase = async (req, res) => {
                   .upsert(rows);
 
                 if (upsertError) {
-                  throw new Error(`Supabase upsert failed: ${upsertError.message}`);
+                  throw new Error(
+                    `Supabase upsert failed: ${upsertError.message}`,
+                  );
                 }
 
                 return chunk.length;
@@ -234,9 +238,10 @@ export const chat = async (req, res) => {
     const looksLikeFilterQuery = FILTER_KEYWORDS_REGEX.test(message);
 
     // Prefetch metadata if needed (runs in parallel with embedding)
-    const metadataPrefetch = (looksLikeFilterQuery && !cachedNumericFields)
-      ? supabase.from("documents").select("metadata").limit(3)
-      : null;
+    const metadataPrefetch =
+      looksLikeFilterQuery && !cachedNumericFields
+        ? supabase.from("documents").select("metadata").limit(3)
+        : null;
 
     let embeddingResult;
     try {
@@ -428,22 +433,23 @@ CRITICAL RULES:
     }
 
     // For filter queries, skip score threshold (results are already pre-filtered)
-    // For regular queries, filter low-score results to reduce noise
-    const threshold = isFilterQuery ? 0 : 0.25;
-    const filteredMatches = matches.filter(
-      (match) => match.score >= threshold,
-    );
+    // For regular queries, use a lower threshold (0.15) so that queries with Vietnamese
+    // accents can still match data stored with no-accent filenames (e.g. "Dũng Thanh Trì" vs "Dung Thanh Tri")
+    const threshold = isFilterQuery ? 0 : 0.15;
+    const filteredMatches = matches.filter((match) => match.score >= threshold);
 
     const context = filteredMatches
       .map((match) => {
-        // Strip redundant prefix to save tokens
-        let text = match.metadata.text || "";
-        text = text.replace(/^Nguồn dữ liệu: [^,]+, /, "");
+        // Keep the "Nguồn dữ liệu" prefix so the AI knows which file each row comes from,
+        // which is critical when the user queries by filename (e.g. "báo giá Dũng Thanh Trì").
+        const text = match.metadata.text || "";
         return text;
       })
       .join("\n");
 
-    const filterHint = isFilterQuery ? ` Dữ liệu đã lọc theo điều kiện số, liệt kê tất cả.` : "";
+    const filterHint = isFilterQuery
+      ? ` Dữ liệu đã lọc theo điều kiện số, liệt kê tất cả.`
+      : "";
 
     const systemPrompt = `Trợ lý AI tra cứu dữ liệu doanh nghiệp. Trả lời CHỈ dựa vào context dưới đây.${filterHint}
 
@@ -452,7 +458,7 @@ ${context || "Không có dữ liệu."}
 
 Quy tắc:
 - Dùng BẢNG MARKDOWN khi liệt kê (≥2 items), tính giá, so sánh. Không dùng bullet/numbered list.
-- Giữ nguyên số từ dữ liệu nguồn, không format lại.
+- Giữ nguyên số từ dữ liệu nguồn, không format lại, khi tính giá kết quả để 2 số thập phân.
 - Không có thông tin → nói rõ không tìm thấy.
 - Ưu tiên giá có sẵn, chỉ tính khi không tìm thấy.
 `;
@@ -511,33 +517,35 @@ Quy tắc:
           res.write(`data: ${JSON.stringify({ text: chunkText })}\n\n`);
         }
       }
-      
+
       // Streaming finished: Append messages to the conversation automatically (Data Loss safe)
       if (conversationId && req.user?._id) {
-         try {
-           await Conversation.findOneAndUpdate(
-             { _id: conversationId, userId: req.user._id },
-             {
-               $push: {
-                 messages: {
-                   $each: [
-                     { role: "user", content: message },
-                     { role: "assistant", content: fullReply }
-                   ]
-                 }
-               }
-             }
-           );
-         } catch(dbErr) {
-            console.error("Error saving conversation to DB:", dbErr);
-         }
+        try {
+          await Conversation.findOneAndUpdate(
+            { _id: conversationId, userId: req.user._id },
+            {
+              $push: {
+                messages: {
+                  $each: [
+                    { role: "user", content: message },
+                    { role: "assistant", content: fullReply },
+                  ],
+                },
+              },
+            },
+          );
+        } catch (dbErr) {
+          console.error("Error saving conversation to DB:", dbErr);
+        }
       }
 
       res.write("data: [DONE]\n\n");
       res.end();
     } catch (streamError) {
       console.error("Stream generation error:", streamError);
-      res.write(`data: ${JSON.stringify({ error: "Lỗi khi tạo stream phản hồi" })}\n\n`);
+      res.write(
+        `data: ${JSON.stringify({ error: "Lỗi khi tạo stream phản hồi" })}\n\n`,
+      );
       res.end();
     }
   } catch (error) {
