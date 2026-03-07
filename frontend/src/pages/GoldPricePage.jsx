@@ -40,6 +40,24 @@ const GoldPricePage = () => {
     return "text-gray-600 bg-gray-50";
   };
 
+  const translateName = (name) => {
+    const map = {
+      "World Gold (XAU/USD)": "Vàng Thế Giới",
+      "PNJ Hanoi": "PNJ Hà Nội",
+      "VN Gold SJC": "Vàng SJC",
+      "DOJI Hanoi": "DOJI Hà Nội",
+      "DOJI HCM": "DOJI TPHCM",
+      "DOJI Jewelry": "DOJI Nữ Trang",
+      "Bao Tin SJC": "Bảo Tín SJC",
+      "Bao Tin 9999": "Bảo Tín 9999",
+      "PNJ 24K": "Nhẫn PNJ 24K",
+      "Viettin SJC": "Viettin SJC",
+      "SJC Ring": "Nhẫn trơn SJC",
+      "SJC 9999": "Vàng SJC 9999",
+    };
+    return map[name] || name;
+  };
+
   return (
     <div className="min-h-screen bg-linear-to-br from-amber-50 via-white to-orange-50 p-4 md:p-8 relative overflow-hidden">
       {/* Background decoration */}
@@ -79,16 +97,16 @@ const GoldPricePage = () => {
         </div>
 
         {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {[1, 2, 3, 4, 5, 6].map((i) => (
-              <div key={i} className="animate-pulse bg-white/60 h-40 rounded-3xl border border-white shadow-sm flex flex-col justify-between p-6">
-                <div className="flex justify-between items-center mb-4">
-                  <div className="w-1/2 h-6 bg-gray-200 rounded-lg"></div>
-                  <div className="w-12 h-5 bg-gray-200 rounded-md"></div>
+          <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4">
+            {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+              <div key={i} className="animate-pulse bg-white/60 h-[140px] rounded-2xl border border-white shadow-sm flex flex-col justify-between p-4">
+                <div className="flex justify-between items-center mb-3">
+                  <div className="w-1/2 h-5 bg-gray-200 rounded-lg"></div>
+                  <div className="w-8 h-4 bg-gray-200 rounded-md"></div>
                 </div>
-                <div className="space-y-3">
-                  <div className="w-full h-12 bg-gray-200/50 rounded-2xl"></div>
-                  <div className="w-full h-12 bg-gray-200/50 rounded-2xl"></div>
+                <div className="space-y-2 mt-auto">
+                  <div className="w-full h-7 bg-gray-200/50 rounded-xl"></div>
+                  <div className="w-full h-7 bg-gray-200/50 rounded-xl"></div>
                 </div>
               </div>
             ))}
@@ -102,52 +120,61 @@ const GoldPricePage = () => {
             <p className="text-sm text-red-400 mt-2">Vui lòng thử lại sau.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {Object.values(data?.prices || {}).map((item, idx) => (
+          <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4">
+            {Object.values(data?.prices || {}).map((item, idx) => {
+              const spread = (item.sell && item.buy) ? item.sell - item.buy : 0;
+              return (
               <div
                 key={idx}
-                className="group relative bg-white/60 hover:bg-white backdrop-blur-xl rounded-3xl p-6 border border-white/80 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
+                className="group relative bg-white/60 hover:bg-white backdrop-blur-xl rounded-2xl p-3 md:p-4 border border-white/80 shadow-sm hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 flex flex-col"
               >
-                <div className="flex justify-between items-start mb-4">
-                  <h3 className="font-bold text-lg text-gray-800 line-clamp-1">{item.name}</h3>
-                  <div className="px-2.5 py-1 bg-amber-100/50 text-amber-600 text-[10px] font-bold rounded-lg uppercase tracking-wider">
+                <div className="flex justify-between items-start mb-2">
+                  <h3 className="font-bold text-[13px] md:text-sm text-gray-800 line-clamp-1 pr-1" title={translateName(item.name)}>
+                    {translateName(item.name)}
+                  </h3>
+                  <div className="px-1.5 py-0.5 bg-amber-100/50 text-amber-600 text-[9px] font-bold rounded uppercase tracking-wider shrink-0">
                     {item.currency}
                   </div>
                 </div>
 
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center p-3 rounded-2xl bg-gray-50/50 group-hover:bg-gray-50 transition-colors border border-transparent group-hover:border-gray-100">
-                    <span className="text-sm text-gray-500">Mua vào</span>
-                    <div className="text-right">
-                      <div className="font-bold text-gray-900 text-[17px]">
+                <div className="flex-1 flex flex-col gap-1.5">
+                  <div className="flex justify-between items-center p-2 rounded-xl bg-gray-50/50 group-hover:bg-gray-50 transition-colors border border-transparent group-hover:border-gray-100">
+                    <span className="text-[11px] md:text-xs text-gray-500">Mua</span>
+                    <div className="text-right flex items-center gap-1.5">
+                      <span className="font-semibold text-gray-900 text-[13px] md:text-sm">
                         {formatPrice(item.buy)}
-                      </div>
+                      </span>
                       {item.change_buy !== 0 && (
-                        <div className={`text-[10px] flex items-center justify-end gap-1 mt-0.5 px-1.5 py-0.5 rounded w-fit ml-auto font-medium ${getChangeClass(item.change_buy)}`}>
+                        <div className={`text-[9px] flex items-center gap-0.5 px-0.5 rounded font-medium ${getChangeClass(item.change_buy)}`} title={formatPrice(Math.abs(item.change_buy))}>
                           {getChangeIcon(item.change_buy)}
-                          {formatPrice(Math.abs(item.change_buy))}
                         </div>
                       )}
                     </div>
                   </div>
 
-                  <div className="flex justify-between items-center p-3 rounded-2xl bg-gray-50/50 group-hover:bg-gray-50 transition-colors border border-transparent group-hover:border-gray-100">
-                    <span className="text-sm text-gray-500">Bán ra</span>
-                    <div className="text-right">
-                      <div className="font-bold text-gray-900 text-[17px]">
+                  <div className="flex justify-between items-center p-2 rounded-xl bg-gray-50/50 group-hover:bg-gray-50 transition-colors border border-transparent group-hover:border-gray-100">
+                    <span className="text-[11px] md:text-xs text-gray-500">Bán</span>
+                    <div className="text-right flex items-center gap-1.5">
+                      <span className="font-semibold text-gray-900 text-[13px] md:text-sm">
                         {formatPrice(item.sell)}
-                      </div>
+                      </span>
                       {item.change_sell !== 0 && (
-                        <div className={`text-[10px] flex items-center justify-end gap-1 mt-0.5 px-1.5 py-0.5 rounded w-fit ml-auto font-medium ${getChangeClass(item.change_sell)}`}>
+                        <div className={`text-[9px] flex items-center gap-0.5 px-0.5 rounded font-medium ${getChangeClass(item.change_sell)}`} title={formatPrice(Math.abs(item.change_sell))}>
                           {getChangeIcon(item.change_sell)}
-                          {formatPrice(Math.abs(item.change_sell))}
                         </div>
                       )}
                     </div>
                   </div>
+
+                  <div className="flex justify-between items-center pt-1.5 px-1 mt-0.5">
+                    <span className="text-[10px] md:text-[11px] text-gray-400">Chênh lệch:</span>
+                    <span className="text-[10px] md:text-[11px] font-semibold text-red-500/80 bg-red-50 px-1.5 py-0.5 rounded">
+                      {formatPrice(spread)}
+                    </span>
+                  </div>
                 </div>
               </div>
-            ))}
+            )})}
           </div>
         )}
       </div>
