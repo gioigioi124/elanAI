@@ -60,7 +60,7 @@ const ChatSidebar = ({
       await api.delete(`/api/conversations/${id}`);
       onDeleteConversation(id);
       toast.success("Đã xóa cuộc trò chuyện");
-    } catch (error) {
+    } catch {
       toast.error("Không thể xóa cuộc trò chuyện");
     } finally {
       setDeletingId(null);
@@ -293,6 +293,16 @@ const ChatSidebar = ({
                           >
                             <Settings size={14} />
                             Cài đặt tài khoản
+                          </button>
+                          <button
+                            onClick={() => {
+                              setShowAccountMenu(false);
+                              navigate("/gold-price");
+                            }}
+                            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-amber-600 hover:bg-amber-50 transition-colors"
+                          >
+                            <Sparkles size={14} />
+                            Giá Vàng
                           </button>
                           <button
                             onClick={handleLogout}

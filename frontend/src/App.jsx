@@ -7,6 +7,7 @@ import AiSettingsPage from "./pages/AiSettingsPage";
 import SettingsPage from "./pages/SettingsPage";
 import PrivateRoute from "./components/PrivateRoute";
 import { AuthProvider } from "./context/AuthContext";
+import GoldPricePage from "./pages/GoldPricePage";
 
 function App() {
   return (
@@ -33,6 +34,7 @@ function App() {
                 <Route element={<PrivateRoute />}>
                   <Route path="/" element={<ChatPage />} />
                   <Route path="/settings" element={<SettingsPage />} />
+                  <Route path="/gold-price" element={<GoldPricePage />} />
                 </Route>
                 <Route element={<PrivateRoute allowedRoles={["admin"]} />}>
                   <Route path="/ai-settings" element={<AiSettingsPage />} />
