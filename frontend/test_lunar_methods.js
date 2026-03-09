@@ -1,0 +1,13 @@
+import { Lunar } from 'lunar-javascript';
+const lunar = Lunar.fromDate(new Date());
+
+const getMethods = (obj) => {
+  let properties = new Set();
+  let currentObj = obj;
+  do {
+    Object.getOwnPropertyNames(currentObj).map(item => properties.add(item));
+  } while ((currentObj = Object.getPrototypeOf(currentObj)));
+  return [...properties.keys()].filter(item => typeof obj[item] === 'function');
+}
+
+console.log(getMethods(lunar).filter(m => m.startsWith('get')).join(', '));

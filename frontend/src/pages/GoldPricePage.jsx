@@ -3,6 +3,7 @@ import { ArrowLeft, TrendingUp, TrendingDown, Clock, Activity, Coins, CalendarDa
 import { Link } from "react-router";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay as getDayOfWeek, isSameDay, addMonths, subMonths } from 'date-fns';
 import { Lunar } from 'lunar-javascript';
+import api from '../services/api';
 
 const CAN = ["Giáp", "Ất", "Bính", "Đinh", "Mậu", "Kỷ", "Canh", "Tân", "Nhâm", "Quý"];
 const CHI = ["Tý", "Sửu", "Dần", "Mão", "Thìn", "Tỵ", "Ngọ", "Mùi", "Thân", "Dậu", "Tuất", "Hợi"];
@@ -27,6 +28,27 @@ const getLunarText = (lunar) => {
 
 const CalendarView = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [historicalEvent, setHistoricalEvent] = useState(null);
+  const [loadingEvent, setLoadingEvent] = useState(false);
+
+  useEffect(() => {
+    const fetchEvent = async () => {
+      try {
+        setLoadingEvent(true);
+        const day = selectedDate.getDate();
+        const month = selectedDate.getMonth() + 1; // 1-indexed
+        const response = await api.get(`/api/events/${month}/${day}`);
+        setHistoricalEvent(response.data);
+      } catch (error) {
+        console.error("Failed to fetch historical event", error);
+        setHistoricalEvent({ event: "Hãy bắt đầu ngày mới với niềm vui và hy vọng!" }); // fallback
+      } finally {
+        setLoadingEvent(false);
+      }
+    };
+    fetchEvent();
+  }, [selectedDate]);
   
   const handlePrevMonth = () => setCurrentDate(subMonths(currentDate, 1));
   const handleNextMonth = () => setCurrentDate(addMonths(currentDate, 1));
@@ -39,25 +61,86 @@ const CalendarView = () => {
   const paddingBefore = startDayOfWeek === 0 ? 6 : startDayOfWeek - 1;
   const blanks = Array(paddingBefore).fill(null);
 
-  const renderTodayDetails = () => {
-    const today = new Date();
-    const lunar = Lunar.fromDate(today);
+  const DAYS_OF_WEEK = ["Chủ nhật", "Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy"];
+
+  const renderDateDetails = () => {
+    const lunar = Lunar.fromDate(selectedDate);
     const textInfo = getLunarText(lunar);
+    const isTdy = isSameDay(selectedDate, new Date());
+
+    // Giờ Hoàng Đạo
+    const times = lunar.getTimes();
+    const hoangDaoHours = [];
+    times.forEach(t => {
+      if (t.getTianShenType() === '黃道' || t.getTianShenType() === '黄道') {
+        const zhiName = CHI[t.getZhiIndex()];
+        if (!hoangDaoHours.includes(zhiName)) {
+           hoangDaoHours.push(zhiName);
+        }
+      }
+    });
+
+    const shenType = lunar.getDayTianShenType();
+    let dayTianShen = 'Ngày Thường';
+    if (shenType === '黃道' || shenType === '黄道') dayTianShen = 'Ngày Hoàng Đạo';
+    if (shenType === '黑道') dayTianShen = 'Ngày Hắc Đạo';
 
     return (
-      <div className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-3xl p-6 text-white text-center shadow-lg shadow-orange-500/30 flex flex-col justify-center relative overflow-hidden h-full min-h-[300px]">
+      <div className="bg-linear-to-br from-amber-500 to-orange-600 rounded-3xl p-6 text-white text-center shadow-lg shadow-orange-500/30 flex flex-col justify-center relative overflow-hidden h-full min-h-[420px]">
          <div className="absolute -top-10 -right-10 opacity-10 pointer-events-none">
-           <CalendarDays size={160} />
+           <CalendarDays size={180} />
          </div>
-         <h2 className="text-xl font-medium opacity-90 mb-1 z-10">{format(today, 'EEEE, dd/MM/yyyy')}</h2>
-         <div className="text-7xl font-bold my-4 z-10">{format(today, 'dd')}</div>
-         <p className="text-lg font-medium opacity-90 mb-4 z-10">Hôm nay</p>
+         <h2 className="text-xl font-medium opacity-90 mb-1 z-10">{DAYS_OF_WEEK[selectedDate.getDay()]}, {format(selectedDate, 'dd/MM/yyyy')}</h2>
+         <div className="text-7xl font-bold my-4 z-10">{format(selectedDate, 'dd')}</div>
          
-         <div className="mt-auto border-t border-white/20 pt-4 space-y-1 z-10">
-           <p className="font-semibold text-xl">Âm lịch: {textInfo.day}/{textInfo.month}</p>
-           <p className="text-sm opacity-90">{textInfo.dayText}</p>
-           <p className="text-sm opacity-90">{textInfo.monthText}</p>
-           <p className="text-sm opacity-90">{textInfo.yearText}</p>
+         <p className={`text-sm font-bold mt-2 z-10 py-1.5 px-4 rounded-full inline-block mx-auto backdrop-blur-sm self-center transition-all duration-300 ${
+           isTdy ? 'bg-white/30 text-white' : 'bg-white/90 text-orange-600 shadow-md transform scale-105'
+         }`}>
+            {isTdy ? 'Hôm nay' : 'Đang chọn'}
+         </p>
+         
+         <div className="z-10 py-3 px-4 bg-black/10 rounded-2xl md:text-sm text-white/95 mx-1 mt-4 mb-2 shadow-inner border border-white/5 flex items-center justify-center min-h-[80px]">
+            {loadingEvent ? (
+               <div className="flex space-x-1 items-center justify-center text-white/50 animate-pulse">
+                  <div className="w-1.5 h-1.5 bg-white/50 rounded-full"></div>
+                  <div className="w-1.5 h-1.5 bg-white/50 rounded-full"></div>
+                  <div className="w-1.5 h-1.5 bg-white/50 rounded-full"></div>
+               </div>
+            ) : (
+               <div className="flex flex-col gap-1 items-center w-full">
+                 <p className="text-[10px] font-bold text-yellow-200/80 uppercase tracking-widest self-start">
+                   {historicalEvent?.type === 'VietnamWar' ? "🇻🇳 Sự kiện lịch sử" : historicalEvent?.type === 'UncleHo' ? "🇻🇳 Dấu ấn Bác Hồ" : "💡 Suy ngẫm"}
+                 </p>
+                 <span className="text-left w-full text-[13px] leading-relaxed font-medium">"{historicalEvent?.event}"</span>
+               </div>
+            )}
+         </div>
+         
+         <div className="mt-auto border-t border-white/20 pt-4 space-y-3 z-10 text-left">
+           <div className="flex justify-between items-center mb-1 gap-2">
+             <p className="font-semibold text-2xl shrink-0">Âm: {textInfo.day}/{textInfo.month}</p>
+             <span className={`text-[10px] sm:text-xs px-2 py-1 rounded font-bold uppercase tracking-wide text-center leading-tight ${
+               dayTianShen === 'Ngày Hoàng Đạo' ? 'bg-amber-200 text-amber-800' : 
+               dayTianShen === 'Ngày Hắc Đạo' ? 'bg-gray-800 text-gray-200' : 'bg-white/30 text-white'
+             }`}>
+               {dayTianShen}
+             </span>
+           </div>
+           
+           <div className="grid grid-cols-2 gap-2 text-[13px] opacity-95">
+              <div className="bg-black/10 rounded-xl p-3">
+                 <p className="text-white/70 text-[10px] mb-1 font-bold uppercase tracking-wider">Can Chi</p>
+                 <div className="space-y-0.5">
+                   <p className="whitespace-nowrap overflow-hidden text-ellipsis">- Năm <span className="font-semibold">{textInfo.yearText.replace('Năm ', '')}</span></p>
+                   <p className="whitespace-nowrap overflow-hidden text-ellipsis">- Tháng <span className="font-semibold">{textInfo.monthText.replace('Tháng ', '')}</span></p>
+                   <p className="whitespace-nowrap overflow-hidden text-ellipsis">- Ngày <span className="font-semibold">{textInfo.dayText.replace('Ngày ', '')}</span></p>
+                 </div>
+              </div>
+              <div className="bg-black/10 rounded-xl p-3 flex flex-col h-full">
+                 <p className="text-yellow-200 text-[10px] mb-1 font-bold uppercase tracking-wider">Giờ Hoàng Đạo</p>
+                 <p className="text-xs leading-relaxed opacity-95 font-medium">{hoangDaoHours.join(", ")}</p>
+              </div>
+           </div>
          </div>
       </div>
     );
@@ -66,7 +149,7 @@ const CalendarView = () => {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in fade-in zoom-in-95 duration-500">
       <div className="lg:col-span-1">
-        {renderTodayDetails()}
+        {renderDateDetails()}
       </div>
       <div className="lg:col-span-2 bg-white/40 backdrop-blur-xl border border-white/60 p-6 rounded-3xl shadow-sm">
         <div className="flex items-center justify-between mb-6">
@@ -82,9 +165,10 @@ const CalendarView = () => {
         </div>
         
         <div className="grid grid-cols-7 gap-1 md:gap-2">
-          {blanks.map((_, i) => <div key={`blank-${i}`} className="p-2 h-14 md:h-20" />)}
+          {blanks.map((_, i) => <div key={`blank-${i}`} className="p-2 h-16 md:h-24" />)}
           {days.map((date, i) => {
             const isTdy = isSameDay(date, new Date());
+            const isSel = isSameDay(date, selectedDate);
             const lunar = Lunar.fromDate(date);
             const lDay = lunar.getDay();
             const lMonth = lunar.getMonth();
@@ -93,15 +177,19 @@ const CalendarView = () => {
             return (
               <div 
                 key={i} 
-                className={`relative flex flex-col items-center justify-center p-1 md:p-2 rounded-xl md:rounded-2xl h-14 md:h-20 transition-all cursor-pointer hover:bg-white hover:shadow-md border
-                  ${isTdy ? 'bg-orange-50 border-orange-200 text-orange-700 shadow-sm' : 'bg-white/40 border-white/40 text-gray-700'}
+                onClick={() => setSelectedDate(date)}
+                className={`relative flex flex-col items-center justify-center p-1 md:p-2 rounded-xl h-16 md:h-24 transition-all cursor-pointer border
+                  ${isSel ? 'bg-orange-500 border-orange-500 text-white shadow-md transform scale-105 z-10' : 
+                    isTdy ? 'bg-orange-50 border-orange-200 text-orange-700 shadow-sm hover:bg-orange-100 hover:border-orange-300' : 
+                    'bg-white/40 border-white/40 text-gray-700 hover:bg-white hover:border-white hover:shadow-md'
+                  }
                 `}
                 title={`${format(date, 'dd/MM/yyyy')} - Âm lịch: ${lDay}/${lMonth}`}
               >
-                <span className={`text-sm md:text-lg font-bold ${isTdy ? 'text-orange-600' : ''}`}>
+                <span className={`text-lg md:text-2xl font-bold ${isSel ? 'text-white' : isTdy ? 'text-orange-600' : ''}`}>
                   {format(date, 'd')}
                 </span>
-                <span className={`text-[9px] md:text-xs font-medium ${isTdy ? 'text-orange-500' : 'text-gray-400'}`}>
+                <span className={`text-[11px] md:text-sm font-medium ${isSel ? 'text-orange-100' : isTdy ? 'text-orange-500' : 'text-gray-400'}`}>
                   {showMonth ? `${lDay}/${lMonth}` : lDay}
                 </span>
               </div>

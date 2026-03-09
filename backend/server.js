@@ -7,6 +7,7 @@ import authRouter from "./src/routers/authRouter.js";
 import userRouter from "./src/routers/userRouter.js";
 import chatbotRouter from "./src/routers/chatbotRouter.js";
 import conversationRouter from "./src/routers/conversationRouter.js";
+import historicalEventRouter from "./src/routers/historicalEventRouter.js";
 import cors from "cors";
 
 //gọi dotenv
@@ -61,6 +62,7 @@ app.use("/api/auth", authRouter);
 app.use("/api/users", userRouter);
 app.use("/api/chatbot", chatbotRouter);
 app.use("/api/conversations", conversationRouter);
+app.use("/api/events", historicalEventRouter);
 
 // connect DB
 connectDB().then(() => {
