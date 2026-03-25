@@ -6,6 +6,7 @@ import {
   PanelLeft,
   Copy,
   Check,
+  Coins,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useChatLogic } from "@/hooks/useChatLogic";
@@ -16,6 +17,7 @@ import remarkGfm from "remark-gfm";
 import * as XLSX from "xlsx";
 import ChatSidebar from "@/components/ChatSidebar";
 import api from "@/services/api";
+import { Link } from "react-router";
 
 const CopyButton = ({ content }) => {
   const [copied, setCopied] = useState(false);
@@ -244,6 +246,18 @@ const ChatPage = () => {
                   : "Cuộc trò chuyện mới"}
               </h1>
             </div>
+
+            <Link to="/gold-price" tabIndex="-1">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="gap-1.5 h-8 px-3 text-xs bg-amber-50 text-amber-700 hover:bg-amber-100 hover:text-amber-800 border-amber-200 transition-colors shadow-sm"
+              >
+                <Coins size={13} />
+                <span className="hidden sm:inline">Vàng & Lịch</span>
+              </Button>
+            </Link>
 
             <Button
               variant="outline"
