@@ -19,3 +19,5 @@ Danh sách các tác vụ cần thực hiện nhằm nâng cấp hệ thống Ch
 - [x] **Nút Copy tin nhắn:** Bổ sung action sao chép đoạn chat hoặc code block ra Clipboard.
 - [x] **Auto-scroll khi Streaming:** Hàm cuộn màn hình sẽ bám theo từng đoạn chữ rớt xuống khi streaming, thay vì nhảy đột ngột.
 - [x] **Gỡ bỏ `<AnnoyingFly />`:** Loại bỏ hoặc disable component này khi đưa vào sử dụng chuyên nghiệp.
+
+test
